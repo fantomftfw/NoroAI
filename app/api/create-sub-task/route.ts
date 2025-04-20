@@ -30,7 +30,70 @@ const gerPrompt = (task: string, spiciness: number) => {
 `
 };
 
-
+/**
+ * @swagger
+ * /api/create-sub-task:
+ *   post:
+ *     summary: Create subtasks for a main task
+ *     description: Breaks down a main task into manageable subtasks using AI, with customizable complexity (spiciness) level
+ *     tags:
+ *       - Tasks
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - task
+ *             properties:
+ *               task:
+ *                 type: string
+ *                 description: The main task to break down into subtasks
+ *               spiciness:
+ *                 type: number
+ *                 description: Complexity level of subtask breakdown (1-5)
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 default: 3
+ *     responses:
+ *       200:
+ *         description: Successfully generated subtasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 task:
+ *                   type: string
+ *                   description: The original main task
+ *                 subtasks:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: string
+ *                         description: Title of the subtask
+ *       400:
+ *         description: Bad request - Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
 
 
 
