@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 
 
@@ -23,7 +24,7 @@ const gerPrompt = (task: string, spiciness: number) => {
     Tailor the breakdown to the nature of the task, ensuring the subtasks remain meaningful and relevant.
 
 
-    Main task: ${task}  
+    Main task: ${task}
     Spiciness level: ${spiciness}
     
 `
@@ -36,7 +37,14 @@ const gerPrompt = (task: string, spiciness: number) => {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { task, spiciness = 3 } = body;
+
+        const schema = z.object({
+            task: z.string(),
+            spiciness: z.number().optional().default(3),
+        });
+
+        const { task, spiciness } = schema.parse(body);
+
 
         if (!task) {
             return NextResponse.json(
@@ -47,13 +55,13 @@ export async function POST(request: NextRequest) {
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.0-flash',
-            contents: gerPrompt(task, spiciness),
+            contents: gerPrompt(task, spiciness), // Pass spiciness here
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        title: {
+                        task: {
                             type: Type.STRING,
                             description: 'The main task name',
                             nullable: false,
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
 
                         }
                     },
-                    required: ['title', 'subtasks'],
+                    required: ['task', 'subtasks'],
                 },
             }
         })
@@ -89,7 +97,14 @@ export async function POST(request: NextRequest) {
             { result: parsedResponseText },
             { status: 201 }
         );
-    } catch (error) {
+    } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+            console.error('Schema validation error:', (error as z.ZodError).errors);
+            return NextResponse.json(
+                { error: 'Invalid request data', details: (error as z.ZodError).errors },
+                { status: 400 }
+            );
+        }
         console.error('Error calling Gemini API:', error);
         return NextResponse.json(
             { error: 'Failed to process the request' },
