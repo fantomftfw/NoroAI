@@ -37,7 +37,7 @@ const gerPrompt = (task: string, spiciness: number) => {
  *     summary: Create subtasks for a main task
  *     description: Breaks down a main task into manageable subtasks using AI, with customizable complexity (spiciness) level
  *     tags:
- *       - Tasks
+ *       - Create Subtask With AI
  *     requestBody:
  *       required: true
  *       content:

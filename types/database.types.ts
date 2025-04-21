@@ -6,6 +6,28 @@ export type Json =
     | { [key: string]: Json | undefined }
     | Json[]
 
+export interface Task {
+    id: string;
+    task: string;
+    category: string;
+    type: 'planned' | 'anytime';
+    startUTCTimestamp: string;
+    endUTCTimestamp: string;
+    spiciness: number;
+    user_id: string;
+    created_at: string;
+}
+
+export interface Subtask {
+    id: string;
+    task_id: string;
+    title: string;
+    order: number;
+    status: 'pending' | 'completed';
+    user_id: string;
+    created_at: string;
+}
+
 export type Database = {
     graphql_public: {
         Tables: {
@@ -34,7 +56,16 @@ export type Database = {
     }
     public: {
         Tables: {
-            [_ in never]: never
+            tasks: {
+                Row: Task
+                Insert: Omit<Task, 'id' | 'created_at'>
+                Update: Partial<Omit<Task, 'id' | 'created_at'>>
+            }
+            subtasks: {
+                Row: Subtask
+                Insert: Omit<Subtask, 'id' | 'created_at'>
+                Update: Partial<Omit<Subtask, 'id' | 'created_at'>>
+            }
         }
         Views: {
             [_ in never]: never

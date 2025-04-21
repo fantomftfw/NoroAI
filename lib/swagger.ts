@@ -15,7 +15,7 @@ const options = {
     // *** IMPORTANT: Update this path for App Router ***
     // Look for files named route.js or route.ts within app/api subdirectories
     apis: [
-        'app/api/**/route.ts'  // For TypeScript
+        './app/api/**/route.ts'  // For TypeScript
     ],
 };
 
