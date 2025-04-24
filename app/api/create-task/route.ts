@@ -256,7 +256,7 @@ async function createTaskAndSubtasks(
                     startUTCTimestamp: data.startUTCTimestamp,
                     endUTCTimestamp: data.endUTCTimestamp,
                     spiciness: data.spiciness,
-                    user_id// Generating random UUID for user
+                    user_id
                 },
             ])
             .select();
@@ -290,7 +290,7 @@ async function createTaskAndSubtasks(
         return {
             data: {
                 ...taskData[0],
-                subtasks: { ...subtaskData[0] }
+                subtasks: subtaskData
             },
             error: null
         };
