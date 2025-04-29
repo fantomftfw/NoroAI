@@ -1,3 +1,4 @@
+
 /**
  * @swagger
  * components:
@@ -150,8 +151,9 @@
 import { z } from "zod";
 import { TaskStatus } from "../../../types/taskStatus";
 import { NextResponse } from "next/server";
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database, Task, Subtask } from "@/types/database.types";
+import { createClient, } from '@/lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Task, Subtask } from "@/types/database.types";
 
 
 const schema = z.object({
@@ -202,16 +204,7 @@ export async function POST(request: Request) {
         const data = result.data;
 
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (!supabaseUrl || !supabaseKey) {
-            console.error("Supabase URL or Key not configured.");
-            return NextResponse.json(
-                { message: "Supabase not configured" },
-                { status: 500 }
-            );
-        }
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        const supabase = await createClient();
 
         const { data: taskData, error: taskError } = await createTaskAndSubtasks(supabase, data);
 
@@ -240,11 +233,26 @@ export async function POST(request: Request) {
 
 // create a function to create a task and subtasks
 async function createTaskAndSubtasks(
-    supabase: SupabaseClient<Database>,
+    supabase: SupabaseClient,
     data: TaskInput
 ): Promise<TaskResponse> {
 
-    const user_id = crypto.randomUUID()
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+        console.error("Error fetching user:", userError);
+        return { data: null, error: userError };
+    }
+
+    console.log("FETCHE USER  :::: ", user)
+
+    if (!user) {
+        return { data: null, error: new Error("Unauthorized - User not authenticated") };
+    }
+
+
+
     try {
         const { data: taskData, error: taskError } = await supabase
             .from('tasks')
@@ -256,7 +264,7 @@ async function createTaskAndSubtasks(
                     startUTCTimestamp: data.startUTCTimestamp,
                     endUTCTimestamp: data.endUTCTimestamp,
                     spiciness: data.spiciness,
-                    user_id
+                    user_id: user.id
                 },
             ])
             .select();
