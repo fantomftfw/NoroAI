@@ -1,4 +1,3 @@
-
 /**
  * @swagger
  * components:
@@ -148,50 +147,16 @@
  *         description: Internal server error
  */
 
-import { z } from "zod";
-import { TaskStatus } from "../../../types/taskStatus";
 import { NextResponse } from "next/server";
-import { createClient, } from '@/lib/supabase/server';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Task, Subtask } from "@/types/database.types";
-
-
-const schema = z.object({
-    task: z.string(),
-    category: z.string(),
-    type: z.enum(['planned', 'anytime']),
-    startUTCTimestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-        message: "Invalid ISO 8601 date format  startUTCTimestamp (YYYY-MM-DD)",
-    }),
-    endUTCTimestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-        message: "Invalid ISO 8601 date format  endUTCTimestamp (YYYY-MM-DD)",
-    }),
-    spiciness: z.number().optional().default(3),
-    subtasks: z.array(
-        z.object({
-            title: z.string(),
-            order: z.number(),
-            status: z.enum([TaskStatus.pending, TaskStatus.completed]),
-        })
-    ).optional(),
-});
-
-// Define the task input type based on the schema
-type TaskInput = z.infer<typeof schema>;
-
-// Define the return type for the function
-interface TaskResponse {
-    data: {
-        tasks: Task[];
-        subtasks: Subtask[];
-    } | null;
-    error: Error | null;
-}
+import { createClient } from '@/lib/supabase/server';
+import { createTaskSchema } from "@/app/schemas/task.schema";
+import { TaskService } from "@/app/services/task.service";
+import { SupabaseTaskRepository } from "@/app/repositories/supabase/task.repository";
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const result = schema.safeParse(body);
+        const result = createTaskSchema.safeParse(body);
 
         if (!result.success) {
             return NextResponse.json(
@@ -200,16 +165,14 @@ export async function POST(request: Request) {
             );
         }
 
-        // Convert date values to UTC
-        const data = result.data;
-
-
         const supabase = await createClient();
+        const taskRepository = new SupabaseTaskRepository(supabase);
+        const taskService = new TaskService(taskRepository);
 
-        const { data: taskData, error: taskError } = await createTaskAndSubtasks(supabase, data);
+        const { data, error } = await taskService.createTask(result.data);
 
-        if (taskError) {
-            console.debug("Error creating task:", taskError);
+        if (error) {
+            console.debug("Error creating task:", error);
             return NextResponse.json(
                 { message: "Failed to create task and subtasks" },
                 { status: 500 }
@@ -218,7 +181,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             message: "Task created successfully",
-            data: [taskData],
+            data,
         }, { status: 200 });
 
     } catch (error) {
@@ -227,83 +190,5 @@ export async function POST(request: Request) {
             { message: "Internal server error" },
             { status: 500 }
         );
-    }
-}
-
-
-// create a function to create a task and subtasks
-async function createTaskAndSubtasks(
-    supabase: SupabaseClient,
-    data: TaskInput
-): Promise<TaskResponse> {
-
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError) {
-        console.error("Error fetching user:", userError);
-        return { data: null, error: userError };
-    }
-
-    console.log("FETCHE USER  :::: ", user)
-
-    if (!user) {
-        return { data: null, error: new Error("Unauthorized - User not authenticated") };
-    }
-
-
-
-    try {
-        const { data: taskData, error: taskError } = await supabase
-            .from('tasks')
-            .insert([
-                {
-                    task: data.task,
-                    category: data.category,
-                    type: data.type,
-                    startUTCTimestamp: data.startUTCTimestamp,
-                    endUTCTimestamp: data.endUTCTimestamp,
-                    spiciness: data.spiciness,
-                    user_id: user.id
-                },
-            ])
-            .select();
-
-        if (taskError) {
-            console.error("Error inserting data:", taskError);
-            return { data: null, error: taskError };
-        }
-
-        console.debug("Task created:", taskData);
-
-        if (!data.subtasks?.length) {  //
-            return { data: { tasks: taskData, subtasks: [] }, error: null };
-        }
-
-        const { data: subtaskData, error: subtaskError } = await supabase
-            .from('sub-tasks')
-            .insert(data.subtasks.map((subtask) => ({
-                task_id: taskData[0].id,
-                title: subtask.title,
-                order: subtask.order,
-                status: subtask.status,
-            })))
-            .select();
-
-        if (subtaskError) {
-            console.error("Error inserting data:", subtaskError);
-            return { data: null, error: subtaskError };
-        }
-
-        return {
-            data: {
-                ...taskData[0],
-                subtasks: subtaskData
-            },
-            error: null
-        };
-    } catch (error) {
-        console.error("Error creating task:", error);
-        return { data: null, error: error as Error };
     }
 }

@@ -1,7 +1,7 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
-import { format, addDays, subDays } from 'date-fns'
+import { format } from 'date-fns'
 
 interface AppHeaderProps {
   date?: Date

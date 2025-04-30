@@ -2,8 +2,8 @@ import React from 'react'
 import { CircleCheckButton } from '../ui/CircleCheckButton'
 import { Clock, CheckSquare, AlertCircle } from 'lucide-react'
 
-type TaskStatus = 'active' | 'paused' | 'completed'
-type TaskIcon = 'timer' | 'checkmark' | 'test'
+type TaskStatus = string // 'active' | 'paused' | 'completed'
+type TaskIcon = string // 'timer' | 'checkmark' | 'test'
 
 interface TaskCardProps {
   title: string

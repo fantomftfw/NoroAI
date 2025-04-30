@@ -11,43 +11,20 @@ import { QuickActionsBar } from '../components/ui/QuickActionsBar'
 import { BottomNavBar } from '../components/navigation/BottomNavBar'
 
 export default function TasksPage() {
-  // // Sample tasks data - in a real app, this would come from a database or API
-  // const plannedTasks = [
-  //   {
-  //     id: 1,
-  //     title: '30 m focus time',
-  //     status: 'paused' as const,
-  //     statusText: 'Paused',
-  //     icon: 'timer' as const,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: 'Market my product',
-  //     status: 'paused' as const,
-  //     statusText: 'Paused',
-  //     icon: 'checkmark' as const,
-  //   },
-  //   { id: 3, title: 'Test', status: 'active' as const, statusText: '17:27', icon: 'test' as const },
-  // ]
+  interface Task {
+    id: string
+    title: string
+    status: string
+    statusText: string
+    icon: string
+  }
 
-  // const anytimeTasks = [
-  //   {
-  //     id: 4,
-  //     title: 'Longpress this task',
-  //     status: 'active' as const,
-  //     statusText: '5m',
-  //     icon: 'timer' as const,
-  //   },
-  //   {
-  //     id: 5,
-  //     title: 'Click on checkmark to complete task',
-  //     status: 'active' as const,
-  //     statusText: '5m',
-  //     icon: 'checkmark' as const,
-  //   },
-  // ]
+  interface TaskState {
+    planned: Task[]
+    anytime: Task[]
+  }
 
-  const [tasks, setTasks] = React.useState<{ planned: any[]; anytime: any[] }>({
+  const [tasks, setTasks] = React.useState<TaskState>({
     planned: [],
     anytime: [],
   })
@@ -65,18 +42,18 @@ export default function TasksPage() {
 
         // Separate tasks into planned and anytime
         const planned = data.data
-          .filter((item: any) => item.task.type === 'planned')
-          .map((item: any) => ({
+          .filter((item: { task: { type: string } }) => item.task.type === 'planned')
+          .map((item: { task: { id: string; task: string } }) => ({
             id: item.task.id,
             title: item.task.task,
             status: 'active',
-            statusText: '5m', // You may want to calculate this based on actual data
+            statusText: '5m',
             icon: 'checkmark',
           }))
 
         const anytime = data.data
-          .filter((item: any) => item.task.type === 'anytime')
-          .map((item: any) => ({
+          .filter((item: { task: { type: string } }) => item.task.type === 'anytime')
+          .map((item: { task: { id: string; task: string } }) => ({
             id: item.task.id,
             title: item.task.task,
             status: 'active',
