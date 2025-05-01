@@ -106,13 +106,17 @@ export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const type = searchParams.get('type') || 'all';
-        const includeSubtasks = searchParams.get('includeSubtasks') || false;
+        const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false;
+
+
+
 
         // Create Supabase client with cookies
         const supabase = await createClient();
 
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+
 
 
         if (userError) {
@@ -143,6 +147,9 @@ export async function GET(request: NextRequest) {
             query = query.eq('type', type);
         }
 
+
+
+
         // Execute the query
         const { data: tasks, error: tasksError } = await query.order('created_at', { ascending: false });
 
@@ -159,6 +166,8 @@ export async function GET(request: NextRequest) {
         // If subtasks are requested, fetch them
         if (includeSubtasks && tasks && tasks.length > 0) {
             const taskIds = tasks.map(task => task.id);
+            console.log("🚀 ~ GET ~ taskIds:", taskIds)
+
 
             const { data: subtasks, error: subtasksError } = await supabase
                 .from('sub-tasks')
