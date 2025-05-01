@@ -8,7 +8,7 @@ This starter kit uses the following tech stack:
    - **TypeScript**: Used for type-safe development
 
 2. **Authentication and User Management:**
-   - **Clerk**: Implemented via `@clerk/nextjs` for handling authentication and user management
+   - **supabase AUTH**: Implemented via `supabase` for handling authentication and user management
 
 3. **Database and Backend:**
    - **Supabase**: Used as the main database and backend service
