@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
 
             // Create response with tasks and their subtasks
             response = tasks.map(task => ({
-                task,
+                ...task,
                 subtasks: subtasksByTaskId[task.id] || []
             }));
         } else {
