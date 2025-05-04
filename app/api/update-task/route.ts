@@ -146,6 +146,20 @@ export async function PATCH(request: Request) {
         const body = await request.json();
         const result = updateTaskSchema.safeParse(body);
 
+        const authHeader = request.headers.get('authorization');
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+        if (!token) {
+            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
+        }
+
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser(token);
+
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 401 });
+        }
+
         if (!result.success) {
             return NextResponse.json(
                 { errors: result.error.issues },
@@ -153,7 +167,6 @@ export async function PATCH(request: Request) {
             );
         }
 
-        const supabase = await createClient();
         const taskRepository = new SupabaseTaskRepository(supabase);
         const taskService = new TaskService(taskRepository);
 

@@ -109,14 +109,18 @@ export async function GET(request: NextRequest) {
         const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false;
 
 
+        const authHeader = request.headers.get('authorization');
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
+        if (!token) {
+            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
+        }
 
         // Create Supabase client with cookies
         const supabase = await createClient();
 
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
 
         if (userError) {
@@ -133,7 +137,6 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
-
 
 
         // Query to fetch tasks for the user
