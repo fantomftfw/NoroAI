@@ -158,20 +158,6 @@ export async function POST(request: Request) {
         const body = await request.json();
         const result = createTaskSchema.safeParse(body);
 
-        const authHeader = request.headers.get('authorization');
-        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-        if (!token) {
-            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
-        }
-
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser(token);
-
-        if (!user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 401 });
-        }
-
         if (!result.success) {
             return NextResponse.json(
                 { errors: result.error.issues },
@@ -180,7 +166,16 @@ export async function POST(request: Request) {
         }
 
 
-        const taskRepository = new SupabaseTaskRepository(supabase);
+        const authHeader = request.headers.get('authorization');
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+        if (!token) {
+            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
+        }
+
+        const supabase = await createClient();
+
+        const taskRepository = new SupabaseTaskRepository(supabase, token);
         const taskService = new TaskService(taskRepository);
 
         const { data, error } = await taskService.createTask(result.data);

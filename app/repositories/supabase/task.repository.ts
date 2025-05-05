@@ -6,11 +6,11 @@ import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types';
 
 
 export class SupabaseTaskRepository implements ITaskRepository {
-    constructor(private supabase: SupabaseClient<Database>) { }
+    constructor(private supabase: SupabaseClient<Database>, private token?: string) { }
 
     async createTask(data: TaskInput): Promise<TaskResponse> {
         try {
-            const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+            const { data: { user }, error: userError } = await this.supabase.auth.getUser(this.token);
 
             if (userError) {
                 return { data: null, error: userError };
