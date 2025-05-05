@@ -181,7 +181,7 @@ export async function POST(request: Request) {
         const { data, error } = await taskService.createTask(result.data);
 
         if (error) {
-            console.debug("Error creating task:", error);
+            console.log("Error creating task:", JSON.stringify(error, null, 2));
             return NextResponse.json(
                 { message: "Failed to create task and subtasks" },
                 { status: 500 }

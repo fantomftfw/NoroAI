@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { MainLayout } from '../components/layout/MainLayout'
 import { AppHeader } from '../components/header/AppHeader'
 import { TasksSection } from '../components/tasks/TasksSection'
@@ -21,8 +21,20 @@ import { DndContext, closestCenter } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useState } from 'react'
 import type { DragEndEvent } from '@dnd-kit/core'
+import useApi from '@/hooks/useApi'
+import { ErrorBoundary } from '@/app/components/ErrorBoundary'
 
 export default function TasksPage() {
+  const { data, error } = useApi('/api/get-tasks?includeSubtasks=false')
+
+  const userTasks = data?.data ?? []
+  console.log('🚀 ~ TasksPage ~ userTasks:', userTasks)
+  console.log('🚀 ~ TasksPage ~ error:', error)
+
+  if (error) {
+    throw new Error('Failed to fetch tasks', error)
+  }
+
   interface Task {
     id: string
     title: string
@@ -62,49 +74,35 @@ export default function TasksPage() {
     repeat: string
   }
 
-  React.useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch('/api/get-tasks?includeSubtasks=false')
+  useEffect(() => {
+    if (userTasks) {
+      // Separate tasks into planned and anytime
+      const planned = userTasks
+        .filter((item: { task: { type: string } }) => item.task.type === 'planned')
+        .map((item: { task: { id: string; task: string } }) => ({
+          id: item.task.id,
+          title: item.task.task,
+          status: 'active',
+          statusText: '5m',
+          icon: 'checkmark',
+        }))
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch tasks')
-        }
+      const anytime = userTasks
+        .filter((item: { task: { type: string } }) => item.task.type === 'anytime')
+        .map((item: { task: { id: string; task: string } }) => ({
+          id: item.task.id,
+          title: item.task.task,
+          status: 'active',
+          statusText: '5m', // You may want to calculate this based on actual data
+          icon: 'checkmark',
+        }))
 
-        const data = await response.json()
-
-        // Separate tasks into planned and anytime
-        const planned = data.data
-          .filter((item: { task: { type: string } }) => item.task.type === 'planned')
-          .map((item: { task: { id: string; task: string } }) => ({
-            id: item.task.id,
-            title: item.task.task,
-            status: 'active',
-            statusText: '5m',
-            icon: 'checkmark',
-          }))
-
-        const anytime = data.data
-          .filter((item: { task: { type: string } }) => item.task.type === 'anytime')
-          .map((item: { task: { id: string; task: string } }) => ({
-            id: item.task.id,
-            title: item.task.task,
-            status: 'active',
-            statusText: '5m', // You may want to calculate this based on actual data
-            icon: 'checkmark',
-          }))
-
-        setTasks({
-          planned,
-          anytime,
-        })
-      } catch (error) {
-        console.error('Error fetching tasks:', error)
-      }
+      setTasks({
+        planned,
+        anytime,
+      })
     }
-
-    fetchTasks()
-  }, [])
+  }, [userTasks])
 
   // Replace the hardcoded tasks with the fetched data
   const plannedTasks = tasks.planned
@@ -186,197 +184,199 @@ export default function TasksPage() {
   }
 
   return (
-    <MainLayout>
-      <AppHeader date={new Date()} />
+    <ErrorBoundary>
+      <MainLayout>
+        <AppHeader date={new Date()} />
 
-      <div className="pb-20">
-        <TasksSection title="PLANNED" count={plannedTasks.length}>
-          {plannedTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              title={task.title}
-              status={task.status}
-              statusText={task.statusText}
-              icon={task.icon}
-            />
-          ))}
-        </TasksSection>
+        <div className="pb-20">
+          <TasksSection title="PLANNED" count={plannedTasks.length}>
+            {plannedTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                title={task.title}
+                status={task.status}
+                statusText={task.statusText}
+                icon={task.icon}
+              />
+            ))}
+          </TasksSection>
 
-        <TasksSection title="ANYTIME" count={anytimeTasks.length}>
-          {anytimeTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              title={task.title}
-              status={task.status}
-              statusText={task.statusText}
-              icon={task.icon}
-            />
-          ))}
-        </TasksSection>
+          <TasksSection title="ANYTIME" count={anytimeTasks.length}>
+            {anytimeTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                title={task.title}
+                status={task.status}
+                statusText={task.statusText}
+                icon={task.icon}
+              />
+            ))}
+          </TasksSection>
 
-        <ReviewDayCard />
-      </div>
+          <ReviewDayCard />
+        </div>
 
-      <FloatingActionButton onClick={() => setDrawerOpen(true)} />
-      <QuickActionsBar />
-      <BottomNavBar />
+        <FloatingActionButton onClick={() => setDrawerOpen(true)} />
+        <QuickActionsBar />
+        <BottomNavBar />
 
-      {/* Drawer for adding task */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl bg-[#181818] text-white">
-          <DrawerHeader>
-            <DrawerTitle>Add New Task</DrawerTitle>
-          </DrawerHeader>
-          <form onSubmit={handleSubmit(onSave)} className="px-4 pb-4">
-            <Controller
-              name="title"
-              control={control}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  placeholder="Task Title"
-                  className="mb-3 w-full rounded-lg bg-[#222] p-3 text-lg font-semibold"
-                  required
-                />
-              )}
-            />
-            <div className="mb-3 flex gap-2">
+        {/* Drawer for adding task */}
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DrawerContent className="mx-auto max-w-md rounded-t-2xl bg-[#181818] text-white">
+            <DrawerHeader>
+              <DrawerTitle>Add New Task</DrawerTitle>
+            </DrawerHeader>
+            <form onSubmit={handleSubmit(onSave)} className="px-4 pb-4">
               <Controller
-                name="category"
+                name="title"
                 control={control}
                 render={({ field }) => (
-                  <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
-                    <option value="Visuals">Visuals</option>
-                    <option value="Work">Work</option>
-                    <option value="Personal">Personal</option>
+                  <input
+                    {...field}
+                    placeholder="Task Title"
+                    className="mb-3 w-full rounded-lg bg-[#222] p-3 text-lg font-semibold"
+                    required
+                  />
+                )}
+              />
+              <div className="mb-3 flex gap-2">
+                <Controller
+                  name="category"
+                  control={control}
+                  render={({ field }) => (
+                    <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
+                      <option value="Visuals">Visuals</option>
+                      <option value="Work">Work</option>
+                      <option value="Personal">Personal</option>
+                    </select>
+                  )}
+                />
+                <Controller
+                  name="type"
+                  control={control}
+                  render={({ field }) => (
+                    <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
+                      <option value="planned">Planned</option>
+                      <option value="anytime">Anytime</option>
+                    </select>
+                  )}
+                />
+              </div>
+              <div className="mb-3 flex gap-2">
+                <Controller
+                  name="start"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="date"
+                      className="flex-1 rounded-lg bg-[#222] p-3"
+                      required
+                    />
+                  )}
+                />
+                <Controller
+                  name="startTime"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="time"
+                      className="flex-1 rounded-lg bg-[#222] p-3"
+                      required
+                    />
+                  )}
+                />
+              </div>
+              <div className="mb-3 flex gap-2">
+                <Controller
+                  name="end"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="date"
+                      className="flex-1 rounded-lg bg-[#222] p-3"
+                      required
+                    />
+                  )}
+                />
+                <Controller
+                  name="endTime"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="time"
+                      className="flex-1 rounded-lg bg-[#222] p-3"
+                      required
+                    />
+                  )}
+                />
+              </div>
+              <Controller
+                name="repeat"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="mb-3 w-full rounded-lg bg-[#222] p-3">
+                    <option value="None">None</option>
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
                   </select>
                 )}
               />
-              <Controller
-                name="type"
-                control={control}
-                render={({ field }) => (
-                  <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
-                    <option value="planned">Planned</option>
-                    <option value="anytime">Anytime</option>
-                  </select>
-                )}
-              />
-            </div>
-            <div className="mb-3 flex gap-2">
-              <Controller
-                name="start"
-                control={control}
-                render={({ field }) => (
+              {/* Subtasks */}
+              <div className="mb-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="font-semibold">Sub-tasks</span>
+                  <button type="button" onClick={handleAddSubtask} className="text-purple-400">
+                    Add
+                  </button>
+                </div>
+                <div className="mb-2 flex gap-2">
                   <input
-                    {...field}
-                    type="date"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
+                    value={subtaskInput}
+                    onChange={(e) => setSubtaskInput(e.target.value)}
+                    placeholder="Sub-task title"
+                    className="flex-1 rounded-lg bg-[#222] p-2"
                   />
-                )}
-              />
-              <Controller
-                name="startTime"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="time"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-            </div>
-            <div className="mb-3 flex gap-2">
-              <Controller
-                name="end"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="date"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-              <Controller
-                name="endTime"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="time"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-            </div>
-            <Controller
-              name="repeat"
-              control={control}
-              render={({ field }) => (
-                <select {...field} className="mb-3 w-full rounded-lg bg-[#222] p-3">
-                  <option value="None">None</option>
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                </select>
-              )}
-            />
-            {/* Subtasks */}
-            <div className="mb-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-semibold">Sub-tasks</span>
-                <button type="button" onClick={handleAddSubtask} className="text-purple-400">
-                  Add
-                </button>
+                </div>
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={subtasks.map((t) => t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {subtasks.map((subtask) => (
+                      <div
+                        key={subtask.id}
+                        className="mb-2 flex items-center rounded-lg bg-[#222] p-2"
+                      >
+                        <span className="mr-2 cursor-move">≡</span>
+                        <span className="flex-1">{subtask.title}</span>
+                      </div>
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
-              <div className="mb-2 flex gap-2">
-                <input
-                  value={subtaskInput}
-                  onChange={(e) => setSubtaskInput(e.target.value)}
-                  placeholder="Sub-task title"
-                  className="flex-1 rounded-lg bg-[#222] p-2"
-                />
-              </div>
-              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext
-                  items={subtasks.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
+              <DrawerFooter>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="mb-2 w-full rounded-lg bg-[#333] py-3 font-semibold text-white"
                 >
-                  {subtasks.map((subtask) => (
-                    <div
-                      key={subtask.id}
-                      className="mb-2 flex items-center rounded-lg bg-[#222] p-2"
-                    >
-                      <span className="mr-2 cursor-move">≡</span>
-                      <span className="flex-1">{subtask.title}</span>
-                    </div>
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-            <DrawerFooter>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="mb-2 w-full rounded-lg bg-[#333] py-3 font-semibold text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-purple-500 py-3 font-semibold text-white"
-              >
-                Save
-              </button>
-            </DrawerFooter>
-          </form>
-        </DrawerContent>
-      </Drawer>
-    </MainLayout>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-full rounded-lg bg-purple-500 py-3 font-semibold text-white"
+                >
+                  Save
+                </button>
+              </DrawerFooter>
+            </form>
+          </DrawerContent>
+        </Drawer>
+      </MainLayout>
+    </ErrorBoundary>
   )
 }
