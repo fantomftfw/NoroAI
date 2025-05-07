@@ -3,22 +3,16 @@ import { Database, Task, Subtask } from "@/types/database.types";
 import { ITaskRepository } from '../interfaces/task.repository';
 import { TaskInput, TaskUpdateInput } from '@/app/schemas/task.schema';
 import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types';
+import { auth } from "@clerk/nextjs/server"
 
 
 export class SupabaseTaskRepository implements ITaskRepository {
-    constructor(private supabase: SupabaseClient<Database>, private token?: string) { }
+    constructor(private supabase: SupabaseClient<Database>) { }
 
     async createTask(data: TaskInput): Promise<TaskResponse> {
+
         try {
-            const { data: { user }, error: userError } = await this.supabase.auth.getUser(this.token);
-
-            if (userError) {
-                return { data: null, error: userError };
-            }
-
-            if (!user) {
-                return { data: null, error: new Error('User not authenticated') };
-            }
+            const { userId } = await auth();
 
             const { data: task, error: taskError } = await this.supabase
                 .from('tasks')
@@ -30,13 +24,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
                         startUTCTimestamp: data.startUTCTimestamp,
                         endUTCTimestamp: data.endUTCTimestamp,
                         spiciness: data.spiciness,
-                        user_id: user.id,
+                        user_id: userId
                     },
                 ])
                 .select()
                 .single();
 
             if (taskError) {
+                console.log("🚀 ~ SupabaseTaskRepository ~ createTask ~ taskError:", taskError)
                 return { data: null, error: taskError };
             }
 

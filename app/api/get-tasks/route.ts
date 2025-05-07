@@ -100,56 +100,30 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { Task, Subtask } from "@/types/database.types";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET(request: NextRequest) {
+
     try {
         const searchParams = request.nextUrl.searchParams;
         const type = searchParams.get('type') || 'all';
         const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false;
 
-
-        const authHeader = request.headers.get('authorization');
-        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-        if (!token) {
-            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
-        }
-
-        // Create Supabase client with cookies
-        const supabase = await createClient();
-
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        const { userId } = await auth();
 
 
-        if (userError) {
-            console.error("Error fetching user:", userError);
-            return NextResponse.json(
-                { message: "Error fetching user: " + userError.message },
-                { status: 401 }
-            );
-        }
+        const supabase = await createServerSupabaseClient();
 
-        if (!user) {
-            return NextResponse.json(
-                { message: "Unauthorized - User not authenticated" },
-                { status: 401 }
-            );
-        }
-
-
-        // Query to fetch tasks for the user
         let query = supabase
             .from('tasks')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
 
         // Apply type filter if not 'all'
         if (type !== 'all') {
             query = query.eq('type', type);
         }
-
 
 
 
@@ -169,7 +143,6 @@ export async function GET(request: NextRequest) {
         // If subtasks are requested, fetch them
         if (includeSubtasks && tasks && tasks.length > 0) {
             const taskIds = tasks.map(task => task.id);
-            console.log("🚀 ~ GET ~ taskIds:", taskIds)
 
 
             const { data: subtasks, error: subtasksError } = await supabase

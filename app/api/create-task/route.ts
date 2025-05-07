@@ -148,12 +148,14 @@
  */
 
 import { NextResponse } from "next/server";
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createTaskSchema } from "@/app/schemas/task.schema";
 import { TaskService } from "@/app/services/task.service";
 import { SupabaseTaskRepository } from "@/app/repositories/supabase/task.repository";
 
 export async function POST(request: Request) {
+
+    console.log("🚀 ~ POST ~ request: ==== > CREATE TASK ",)
     try {
         const body = await request.json();
         const result = createTaskSchema.safeParse(body);
@@ -166,22 +168,14 @@ export async function POST(request: Request) {
         }
 
 
-        const authHeader = request.headers.get('authorization');
-        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-        if (!token) {
-            return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
-        }
-
-        const supabase = await createClient();
-
-        const taskRepository = new SupabaseTaskRepository(supabase, token);
+        const supabase = await createServerSupabaseClient();
+        const taskRepository = new SupabaseTaskRepository(supabase);
         const taskService = new TaskService(taskRepository);
 
         const { data, error } = await taskService.createTask(result.data);
 
         if (error) {
-            console.log("Error creating task:", JSON.stringify(error, null, 2));
+            console.log("Error creating task:", error);
             return NextResponse.json(
                 { message: "Failed to create task and subtasks" },
                 { status: 500 }
