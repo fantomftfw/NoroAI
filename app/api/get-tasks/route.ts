@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const type = searchParams.get('type') || 'all';
         const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false;
-        const startDate = searchParams.get('startDate'); // Expecting format: YYYY-MM-DD
+        const startDate = searchParams.get('startDate');
 
         const { userId } = await auth();
 
@@ -130,12 +130,13 @@ export async function GET(request: NextRequest) {
             // Filter tasks where startUTCTimestamp is on the given date (UTC)
             const startOfDay = `${startDate}T00:00:00Z`;
             const endOfDay = `${startDate}T23:59:59Z`;
-            console.log("🚀 ~ GET ~ startOfDay:", startOfDay)
             query = query.gte('startUTCTimestamp', startOfDay).lte('startUTCTimestamp', endOfDay);
         }
 
+
+
         // Execute the query
-        const { data: tasks, error: tasksError } = await query.order('created_at', { ascending: false });
+        const { data: tasks, error: tasksError } = await query.order('created_at', { ascending: false })
 
         if (tasksError) {
             console.error("Error fetching tasks:", tasksError);
