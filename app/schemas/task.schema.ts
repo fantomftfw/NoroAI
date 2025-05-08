@@ -6,12 +6,12 @@ export const taskBaseSchema = z.object({
     task: z.string(),
     category: z.string(),
     type: z.enum(['planned', 'anytime']),
-    startUTCTimestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-        message: "Invalid ISO 8601 date format startUTCTimestamp (YYYY-MM-DD)",
-    }),
-    endUTCTimestamp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-        message: "Invalid ISO 8601 date format endUTCTimestamp (YYYY-MM-DD)",
-    }),
+    startUTCTimestamp: z.string().datetime({ message: "Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)" })
+        .optional()
+        .nullable(),
+    endUTCTimestamp: z.string().datetime({ message: "Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)" })
+        .optional()
+        .nullable(),
     spiciness: z.number().optional().default(3),
 });
 
