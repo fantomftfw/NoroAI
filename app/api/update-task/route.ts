@@ -136,7 +136,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { updateTaskSchema } from "@/app/schemas/task.schema";
 import { TaskService } from "@/app/services/task.service";
 import { SupabaseTaskRepository } from "@/app/repositories/supabase/task.repository";
@@ -153,7 +153,7 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: 'Authorization header missing or malformed' }, { status: 401 });
         }
 
-        const supabase = await createClient();
+        const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser(token);
 
         if (!user) {

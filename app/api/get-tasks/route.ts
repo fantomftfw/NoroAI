@@ -109,9 +109,9 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const type = searchParams.get('type') || 'all';
         const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false;
+        const startDate = searchParams.get('startDate'); // Expecting format: YYYY-MM-DD
 
         const { userId } = await auth();
-
 
         const supabase = await createServerSupabaseClient();
 
@@ -125,7 +125,14 @@ export async function GET(request: NextRequest) {
             query = query.eq('type', type);
         }
 
-
+        // Apply startDate filter if provided
+        if (startDate) {
+            // Filter tasks where startUTCTimestamp is on the given date (UTC)
+            const startOfDay = `${startDate}T00:00:00Z`;
+            const endOfDay = `${startDate}T23:59:59Z`;
+            console.log("🚀 ~ GET ~ startOfDay:", startOfDay)
+            query = query.gte('startUTCTimestamp', startOfDay).lte('startUTCTimestamp', endOfDay);
+        }
 
         // Execute the query
         const { data: tasks, error: tasksError } = await query.order('created_at', { ascending: false });
@@ -143,7 +150,6 @@ export async function GET(request: NextRequest) {
         // If subtasks are requested, fetch them
         if (includeSubtasks && tasks && tasks.length > 0) {
             const taskIds = tasks.map(task => task.id);
-
 
             const { data: subtasks, error: subtasksError } = await supabase
                 .from('sub-tasks')
