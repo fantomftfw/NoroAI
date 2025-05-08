@@ -29,7 +29,6 @@ export default function TasksPage() {
     { key: 'value' },
     { method: 'GET' }
   )
-  const userTasks = data?.data ?? []
 
   if (error) {
     throw new Error(error.message)
@@ -79,6 +78,7 @@ export default function TasksPage() {
   }, [])
 
   useEffect(() => {
+    const userTasks = data?.data
     if (userTasks) {
       // Separate tasks into planned and anytime
       const planned = userTasks
@@ -106,7 +106,7 @@ export default function TasksPage() {
         anytime,
       })
     }
-  }, [userTasks])
+  }, [data])
 
   // Replace the hardcoded tasks with the fetched data
   const plannedTasks = tasks.planned
