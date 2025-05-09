@@ -73,10 +73,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
         existingSubtasks: Subtask[],
         updatedSubtasks: TaskUpdateInput['subtasks']
     ) {
-        console.log("🚀 ~ SupabaseTaskRepository ~ updatedSubtasks:", updatedSubtasks)
-        console.log("🚀 ~ SupabaseTaskRepository ~ existingSubtasks:", existingSubtasks)
-        console.log("🚀 ~ SupabaseTaskRepository ~ taskId:", taskId)
-
 
 
         if (!updatedSubtasks) return;
@@ -143,7 +139,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
     async updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse> {
 
-        console.log("data to update - inside update task  ", data)
+
         try {
             // First, fetch all existing subtasks to handle reordering properly
             const { data: existingSubtasks, error: fetchExistingSubtaskError } = await this.supabase
@@ -152,7 +148,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 .eq('task_id', data.id)
                 .order('order', { ascending: true });
 
-            console.log("🚀 ~ SupabaseTaskRepository ~ updateTask ~ existingSubtasks:", existingSubtasks)
             if (fetchExistingSubtaskError) {
                 return { data: null, error: fetchExistingSubtaskError };
             }
@@ -164,7 +159,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
             if (data.type) updateData.type = data.type;
             if (data.startUTCTimestamp) updateData.startUTCTimestamp = data.startUTCTimestamp;
             if (data.endUTCTimestamp) updateData.endUTCTimestamp = data.endUTCTimestamp;
-            if (data.spiciness) updateData.spiciness = data.spiciness;
+            if (data.is_completed) updateData.is_completed = data.is_completed
+
+            // if (data.spiciness) updateData.spiciness = data.spiciness;
+            // if spiciness changes then sub task will be generated and sent  :: currently we are not dealing with it 
+
 
 
             let updatedTask = undefined;

@@ -154,8 +154,6 @@ import { TaskService } from "@/app/services/task.service";
 import { SupabaseTaskRepository } from "@/app/repositories/supabase/task.repository";
 
 export async function POST(request: Request) {
-
-    console.log("🚀 ~ POST ~ request: ==== > CREATE TASK ",)
     try {
         const body = await request.json();
         const result = createTaskSchema.safeParse(body);

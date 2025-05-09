@@ -10,12 +10,14 @@ export interface Task {
     id: string;
     task: string;
     category: string;
-    type: 'planned' | 'anytime';
+    type: 'planned' | 'allday' | 'someday';
     startUTCTimestamp: string;
     endUTCTimestamp: string;
     spiciness: number;
     user_id: string;
     created_at: string;
+    is_completed: boolean;
+    is_deleted: boolean;
 }
 
 export interface Subtask {
