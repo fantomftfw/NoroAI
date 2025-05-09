@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         }
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.0-flash-lite',
             contents: gerPrompt(task, spiciness),
             config: {
                 responseMimeType: 'application/json',
@@ -176,6 +176,8 @@ export async function POST(request: NextRequest) {
                 },
             },
         })
+
+        console.log("🚀 ~ POST ~ response:", JSON.stringify(response, null, 2))
 
         const parsedResponseText = JSON.parse(response.text || '{}')
 
