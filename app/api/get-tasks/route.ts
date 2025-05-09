@@ -119,6 +119,7 @@ export async function GET(request: NextRequest) {
             .from('tasks')
             .select('*')
             .eq('user_id', userId)
+            .eq('is_deleted', false)
 
         // Apply type filter if not 'all'
         if (type !== 'all') {

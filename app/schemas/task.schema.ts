@@ -42,6 +42,11 @@ export const updateTaskSchema = taskBaseSchema.partial().extend({
     ).optional(),
 });
 
+// Schema for deleting a task
+export const deleteTaskSchema = z.object({
+    id: z.string().uuid(),
+});
+
 // Type exports
 export type TaskInput = z.infer<typeof createTaskSchema>;
 export type TaskUpdateInput = z.infer<typeof updateTaskSchema>; 

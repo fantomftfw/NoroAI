@@ -220,7 +220,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
     async deleteTask(id: string): Promise<boolean> {
         const { error } = await this.supabase
             .from('tasks')
-            .delete()
+            .update({ is_deleted: true })
             .eq('id', id);
 
         return !error;
