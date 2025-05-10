@@ -9,4 +9,5 @@ export interface ITaskRepository {
     getTaskById(id: string): Promise<Task | null>;
     getSubtasksByTaskId(taskId: string): Promise<Subtask[]>;
     deleteTask(id: string): Promise<boolean>;
-} 
+    updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse>;
+}

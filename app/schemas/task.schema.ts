@@ -31,6 +31,7 @@ export const createTaskSchema = taskBaseSchema.extend({
 // Schema for updating an existing task
 export const updateTaskSchema = taskBaseSchema.partial().extend({
     id: z.string().uuid(),
+    status: z.enum([TASK_STATUS.PENDING, TASK_STATUS.COMPLETED]).optional(),
     subtasks: z.array(
         z.object({
             id: z.string().uuid().optional(),

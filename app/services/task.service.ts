@@ -25,4 +25,8 @@ export class TaskService {
     async deleteTask(id: string): Promise<boolean> {
         return this.taskRepository.deleteTask(id);
     }
-} 
+
+    async updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse> {
+        return this.taskRepository.updateTask({ id, is_completed });
+    }
+}

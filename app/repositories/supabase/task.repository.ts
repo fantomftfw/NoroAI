@@ -225,4 +225,27 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
         return !error;
     }
-} 
+
+    async updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse> {
+        try {
+            const { data, error } = await this.supabase
+                .from('tasks')
+                .update({ is_completed: is_completed })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            if (!data) {
+                return { data: null, error: new Error('Task not found') };
+            }
+
+            return { data, error: null };
+        } catch (error) {
+            return { data: null, error: error as Error };
+        }
+    }
+}
