@@ -4,7 +4,7 @@ import { deleteTaskSchema } from "@/app/schemas/task.schema";
 import { TaskService } from "@/app/services/task.service";
 import { SupabaseTaskRepository } from "@/app/repositories/supabase/task.repository";
 
-export async function DELETE(request) {
+export async function DELETE(request: Request) {
     try {
         const body = await request.json();
         const result = deleteTaskSchema.safeParse(body);
