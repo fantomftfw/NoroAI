@@ -248,4 +248,26 @@ export class SupabaseTaskRepository implements ITaskRepository {
             return { data: null, error: error as Error };
         }
     }
+    async updateSubtaskStatus(id: string, is_completed: boolean): Promise<{ data: Subtask | null, error: Error | null }> {
+        try {
+            const { data, error } = await this.supabase
+                .from('sub-tasks')
+                .update({ is_completed: is_completed }) // Assuming 'status' field exists and uses 'completed'/'pending'
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            if (!data) {
+                return { data: null, error: new Error('Subtask not found') };
+            }
+
+            return { data, error: null };
+        } catch (error) {
+            return { data: null, error: error as Error };
+        }
+    }
 }

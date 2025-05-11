@@ -23,7 +23,7 @@ export const createTaskSchema = taskBaseSchema.extend({
         z.object({
             title: z.string(),
             order: z.number(),
-            status: z.enum([TASK_STATUS.PENDING, TASK_STATUS.COMPLETED]),
+            is_completed: z.boolean().optional().default(false),
         })
     ).optional(),
 });
@@ -31,13 +31,13 @@ export const createTaskSchema = taskBaseSchema.extend({
 // Schema for updating an existing task
 export const updateTaskSchema = taskBaseSchema.partial().extend({
     id: z.string().uuid(),
-    status: z.enum([TASK_STATUS.PENDING, TASK_STATUS.COMPLETED]).optional(),
+    is_completed: z.boolean().optional().default(false),
     subtasks: z.array(
         z.object({
             id: z.string().uuid().optional(),
             title: z.string().optional(),
             order: z.number().optional(),
-            status: z.enum([TASK_STATUS.PENDING, TASK_STATUS.COMPLETED]).optional(),
+            is_completed: z.boolean().optional(),
             _delete: z.boolean().optional().default(false),
         })
     ).optional(),
