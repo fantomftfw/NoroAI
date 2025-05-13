@@ -75,7 +75,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     callApi()
-  }, [])
+  }, [callApi])
 
   useEffect(() => {
     const userTasks = data?.data

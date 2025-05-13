@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { TASK_STATUS } from "@/utils/constants";
 import { TASK_TYPE } from "@/utils/constants";
 
 // Base schema for task validation
