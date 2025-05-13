@@ -168,8 +168,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
             let updatedTask = undefined;
             if (Object.keys(updateData).length > 0) {
-                console.log("🚀 ~ SupabaseTaskRepository ~ updateTask ~ updateData:", updateData)
-
                 const { data: updatedTaskData, error: updateError } = await this.supabase
                     .from('tasks')
                     .update(updateData)
@@ -252,7 +250,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
         try {
             const { data, error } = await this.supabase
                 .from('sub-tasks')
-                .update({ is_completed: is_completed }) // Assuming 'status' field exists and uses 'completed'/'pending'
+                .update({ is_completed: is_completed })
                 .eq('id', id)
                 .select()
                 .single();

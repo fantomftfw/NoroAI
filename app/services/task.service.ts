@@ -27,6 +27,6 @@ export class TaskService {
     }
 
     async updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse> {
-        return this.taskRepository.updateTask({ id, is_completed });
+        return this.taskRepository.updateTaskStatus(id, is_completed);
     }
 }
