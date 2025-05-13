@@ -25,7 +25,7 @@ export interface Subtask {
     task_id: string;
     title: string;
     order: number;
-    status: 'pending' | 'completed';
+    is_completed: boolean;
     user_id: string;
     created_at: string;
 }

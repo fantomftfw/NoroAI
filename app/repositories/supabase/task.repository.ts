@@ -44,7 +44,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
                             task_id: task.id,
                             title: subtask.title,
                             order: subtask.order,
-                            status: subtask.status,
+                            status: subtask.is_completed,
                         }))
                     )
                     .select();
@@ -106,7 +106,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
                     .update({
                         title: subtask.title ?? currentSubtask.title,
                         order: newOrder,
-                        status: subtask.status ?? currentSubtask.status,
+                        status: subtask.is_completed ?? currentSubtask.is_completed,
                     })
                     .eq('id', subtask.id);
             } else if (!subtask.id) {
@@ -118,7 +118,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
                         task_id: taskId,
                         title: subtask.title,
                         order: subtask.order ?? maxOrder,
-                        status: subtask.status,
+                        status: subtask.is_completed,
                     });
             }
         }
