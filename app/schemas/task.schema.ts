@@ -13,7 +13,9 @@ export const taskBaseSchema = z.object({
         .optional()
         .nullable(),
     spiciness: z.number().optional().default(3),
-    is_completed: z.boolean().optional().default(false)
+    is_completed: z.boolean().optional().default(false),
+    order: z.number().default(0),
+    totalEstimatedTime: z.number().default(0),
 });
 
 // Schema for creating a new task
@@ -23,6 +25,7 @@ export const createTaskSchema = taskBaseSchema.extend({
             title: z.string(),
             order: z.number(),
             is_completed: z.boolean().optional().default(false),
+            estimatedTime: z.number().default(0),
         })
     ).optional(),
 });

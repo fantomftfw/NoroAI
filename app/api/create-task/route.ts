@@ -158,6 +158,8 @@ export async function POST(request: Request) {
         const body = await request.json();
         const result = createTaskSchema.safeParse(body);
 
+        console.log("resulkt  === = ", result.data)
+
         if (!result.success) {
             return NextResponse.json(
                 { errors: result.error.issues },

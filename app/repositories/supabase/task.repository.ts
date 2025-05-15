@@ -9,7 +9,8 @@ import { auth } from "@clerk/nextjs/server"
 export class SupabaseTaskRepository implements ITaskRepository {
     constructor(private supabase: SupabaseClient<Database>) { }
 
-    async createTask(data: TaskInput): Promise<TaskResponse> {
+    async createTask({ subtasks: incomingSubtask, ...taskData }: TaskInput): Promise<TaskResponse> {
+
 
         try {
             const { userId } = await auth();
@@ -18,12 +19,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 .from('tasks')
                 .insert([
                     {
-                        task: data.task,
-                        category: data.category,
-                        type: data.type,
-                        startUTCTimestamp: data.startUTCTimestamp,
-                        endUTCTimestamp: data.endUTCTimestamp,
-                        spiciness: data.spiciness,
+                        ...taskData,
                         user_id: userId
                     },
                 ])
@@ -35,16 +31,16 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 return { data: null, error: taskError };
             }
 
-            const subtasks: Subtask[] = [];
-            if (data.subtasks && data.subtasks.length > 0) {
+            const subtasksSaved: Subtask[] = [];
+            if (incomingSubtask && incomingSubtask.length > 0) {
                 const { data: subtaskData, error: subtaskError } = await this.supabase
                     .from('sub-tasks')
                     .insert(
-                        data.subtasks.map((subtask) => ({
+                        incomingSubtask.map((subtask) => ({
                             task_id: task.id,
                             title: subtask.title,
                             order: subtask.order,
-                            status: subtask.is_completed,
+                            is_completed: subtask.is_completed,
                         }))
                     )
                     .select();
@@ -53,13 +49,13 @@ export class SupabaseTaskRepository implements ITaskRepository {
                     return { data: null, error: subtaskError };
                 }
 
-                subtasks.push(...(subtaskData as Subtask[]));
+                subtasksSaved.push(...(subtaskData as Subtask[]));
             }
 
             return {
                 data: {
-                    tasks: [task],
-                    subtasks,
+                    ...task,
+                    subtasks: subtasksSaved,
                 },
                 error: null,
             };
