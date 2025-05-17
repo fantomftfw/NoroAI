@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
 import { z } from 'zod'
 
 const SYSTEM_PROMPT = `
@@ -218,191 +218,108 @@ json{
 Remember: Your goal is to first determine if the input contains a valid task, and if so, parse it into structured data according to the schema. Do not include explanations or commentary in your responses, only valid JSON.
 `
 
-// const messagesArr = 
+// const messagesArr =
 
 // import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 const userInputSchema = z.object({
-    userTask: z.string(),
-    currentDateTime: z.string().datetime({ message: "Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)" })
-        .optional()
-        .nullable(),
-});
+  audio: z.instanceof(File),
+  currentDateTime: z
+    .string()
+    .datetime({ message: 'Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+    .optional() // IF NO TIME PROVIDED THEN IT IS SOMEDAY TASK
+    .nullable(),
+})
+
+async function transcribeAudio(audioFile: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', audioFile)
+  formData.append('model', 'whisper-1')
+
+  const response = await openai.audio.transcriptions.create({
+    file: audioFile,
+    model: 'whisper-1',
+    language: 'en',
+    prompt: 'Please transcribe the following audio into text.',
+  })
+
+  console.log('response AUDIo  = ', response)
+
+  return response.text
+}
 
 // Initialize Supabase client
 export async function POST(request: Request) {
+  const formData = await request.formData()
+  const audio = formData.get('audio') as File
+  const currentDateTime = formData.get('currentDateTime') as string
 
-    const body = await request.json();
-    console.log("🚀 ~ POST ~ userData:", body)
-    const userInputValidationResult = userInputSchema.safeParse(body);
+  const userInputValidationResult = userInputSchema.safeParse({ audio, currentDateTime })
 
-    if (!userInputValidationResult.success) {
-        return NextResponse.json(
-            { error: "Invalid task data received from AI", details: userInputValidationResult.error.errors },
-            { status: 500 }
-        );
-    }
+  if (!userInputValidationResult.success) {
+    return NextResponse.json(
+      {
+        error: 'Invalid task data received from AI',
+        details: userInputValidationResult.error.errors,
+      },
+      { status: 500 }
+    )
+  }
 
-    const { currentDateTime, userTask } = userInputValidationResult.data
+  //   const { currentDateTime, audio } = userInputValidationResult.data
 
-    const userInput = `The current UTC timestamp is ${currentDateTime} and user task is${userTask}`
+  // Transcribe the audio to text using Whisper API
+  const transcribedText = await transcribeAudio(audio)
 
-    try {
-        const response = await openai.responses.create({
-            model: "gpt-4.1-nano",
-            input: [
-                {
-                    "role": "system",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": SYSTEM_PROMPT
-                        }
-                    ]
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": userInput
-                        }
-                    ]
-                }
-            ],
-            text: {
-                "format": {
-                    "type": "text"
-                }
+  const userInput = `The current UTC timestamp is ${currentDateTime} and user task is ${transcribedText}`
+
+  try {
+    const response = await openai.responses.create({
+      model: 'gpt-4.1-nano',
+      input: [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: SYSTEM_PROMPT,
             },
-            reasoning: {},
-            tools: [],
-            temperature: 1,
-            max_output_tokens: 2048,
-            top_p: 1,
-            store: true
-        });
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: userInput,
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'text',
+        },
+      },
+      reasoning: {},
+      tools: [],
+      temperature: 1,
+      max_output_tokens: 2048,
+      top_p: 1,
+      store: true,
+    })
 
-        console.log("RES = ", response)
-        console.log("response  = ", JSON.stringify(response, null, 2))
+    console.log('RES = ', response)
+    console.log('response  = ', JSON.stringify(response, null, 2))
 
-        return NextResponse.json({ success: true, task: response });
-    } catch (error) {
-        console.error('Error processing task:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-    }
-    // try {
-
-    //     const UserInputSchema = z.object({
-    //         userText: z.string(),
-    //         currentDateTime: z.string().datetime({ message: "Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)" })
-    //             .optional()
-    //             .nullable(),
-    //     });
-    //     const userData = await req.json();
-
-    //     const userInputValidationResult = UserInputSchema.safeParse(userData);
-
-    //     if (!userInputValidationResult.success) {
-    //         return NextResponse.json(
-    //             { error: "Invalid task data received from AI", details: userInputValidationResult.error.errors },
-    //             { status: 500 }
-    //         );
-    //     }
-
-    //     // const { currentDateTime, userText } = userInputValidationResult.data
-
-
-    //     // adding user msg to the msg arr
-    //     // messagesArr.push()
-
-    //     // const supabase = await createServerSupabaseClient();
-
-    //     // Define the function schema for OpenAI
-
-
-
-
-    //     const response = await openai.responses.create({
-    //         model: "gpt-4.1-nano",
-    //         input: [
-    //             {
-    //                 "role": "system",
-    //                 "content": [
-    //                     {
-    //                         "type": "input_text",
-    //                         "text": SYSTEM_PROMPT
-    //                     }
-    //                 ]
-    //             },
-    //             {
-    //                 "role": "user",
-    //                 "content": [
-    //                     {
-    //                         "type": "input_text",
-    //                         // "text": "'{\"currentDateTime\":\"2025-05-16T11:08:09Z\",\"userInput\":\"plant waters on 25 may at 3 pm\"}'"
-    //                         // "type": "input_text",
-    //                         "text": "Call Mom on 20th may "
-    //                         // "text": `current UTC iso time is ${currentDateTime} and user task is : ${userText}`
-    //                     }
-    //                 ]
-    //             }
-
-    //         ],
-    //         text: {
-    //             "format": {
-    //                 "type": "text"
-    //             }
-    //         },
-    //         reasoning: {},
-    //         tools: [],
-    //         temperature: 1,
-    //         max_output_tokens: 2048,
-    //         top_p: 1,
-    //         store: true,
-    //         // stream: true,
-    //         parallel_tool_calls: false,
-    //     });
-
-    //     console.log("RES = ", response)
-    //     console.log("response  = ", JSON.stringify(response, null, 2))
-
-    //     // Save to database
-    //     // const { data, error } = await supabase
-    //     //     .from('tasks')
-    //     //     .insert([
-    //     //         {
-    //     //             title: taskData.title,
-    //     //             due_date: taskData.dueDate,
-    //     //             description: taskData.description || null,
-    //     //             status: 'pending',
-    //     //         },
-    //     //     ])
-    //     //     .select()
-    //     //     .single();
-
-    //     // if (error) {
-    //     //     return NextResponse.json(
-    //     //         { error: 'Failed to save task' },
-    //     //         { status: 500 }
-    //     //     );
-    //     // }
-
-    //     return NextResponse.json({ success: true, task: response });
-    // } catch (error) {
-    //     console.error('Error processing task:', error);
-    //     return NextResponse.json(
-    //         { error: 'Internal server error' },
-    //         { status: 500 }
-    //     );
-    // }
-} 
+    return NextResponse.json({ success: true, task: response })
+  } catch (error) {
+    console.error('Error processing task:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

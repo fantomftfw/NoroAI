@@ -109,10 +109,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'all'
     const includeSubtasks = searchParams.get('includeSubtasks') === 'true' || false
     const startDate = searchParams.get('startDate')
-
     const { userId } = await auth()
-
-    console.log('🚀 ~ GET ~ userId:', userId)
 
     const supabase = await createServerSupabaseClient()
 
