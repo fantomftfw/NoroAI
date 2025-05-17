@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { TaskUpdateInput } from '../schemas/task.schema'
+import { RecordingDialog } from '@/components/recording-dialog'
 
 const TaskPage = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const {
     data: tasks,
     loading,
@@ -39,6 +41,7 @@ const TaskPage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <RecordingDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
       {/* Header */}
       <header className="flex items-center justify-between p-4">
         <div className="flex items-center">
@@ -145,7 +148,11 @@ const TaskPage = () => {
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-20 right-6 flex flex-col items-center space-y-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-600 shadow-lg">
+        <div
+          id="recording-btn"
+          onClick={() => setIsDialogOpen(true)}
+          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-purple-600 shadow-lg"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6 text-white"
