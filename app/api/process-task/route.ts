@@ -218,11 +218,9 @@ json{
 Remember: Your goal is to first determine if the input contains a valid task, and if so, parse it into structured data according to the schema. Do not include explanations or commentary in your responses, only valid JSON.
 `
 
-// const messagesArr =
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 
-// import { createServerSupabaseClient } from '@/lib/supabase/server';
-
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
@@ -255,6 +253,12 @@ async function transcribeAudio(audioFile: File): Promise<string> {
 
 // Initialize Supabase client
 export async function POST(request: Request) {
+  // Get user ID from Clerk auth
+  const { userId } = await auth()
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const formData = await request.formData()
   const audio = formData.get('audio') as File
   const currentDateTime = formData.get('currentDateTime') as string
@@ -270,8 +274,6 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-
-  //   const { currentDateTime, audio } = userInputValidationResult.data
 
   // Transcribe the audio to text using Whisper API
   const transcribedText = await transcribeAudio(audio)
@@ -314,10 +316,26 @@ export async function POST(request: Request) {
       store: true,
     })
 
-    console.log('RES = ', response)
-    console.log('response  = ', JSON.stringify(response, null, 2))
+    const cleaned = response.output_text.replace(/^json\s*/i, '')
+    const { taskData } = JSON.parse(cleaned)
 
-    return NextResponse.json({ success: true, task: response })
+    const supabase = createServerSupabaseClient()
+
+    //  Store the task in Supabase with user ID
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        ...taskData,
+        user_id: userId,
+      })
+      .select()
+
+    if (error) {
+      console.error('Error storing task:', error)
+      return NextResponse.json({ error: 'Failed to store task' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, task: data[0] })
   } catch (error) {
     console.error('Error processing task:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
