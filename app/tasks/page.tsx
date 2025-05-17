@@ -1,384 +1,245 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { MainLayout } from '../components/layout/MainLayout'
-import { AppHeader } from '../components/header/AppHeader'
-import { TasksSection } from '../components/tasks/TasksSection'
-import { TaskCard } from '../components/tasks/TaskCard'
-import { ReviewDayCard } from '../components/tasks/ReviewDayCard'
-import { FloatingActionButton } from '../components/ui/FloatingActionButton'
-import { QuickActionsBar } from '../components/ui/QuickActionsBar'
-import { BottomNavBar } from '../components/navigation/BottomNavBar'
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerFooter,
-  DrawerTitle,
-} from '../../components/ui/drawer'
-import { useForm, Controller } from 'react-hook-form'
-import { DndContext, closestCenter } from '@dnd-kit/core'
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useState } from 'react'
-import type { DragEndEvent } from '@dnd-kit/core'
 import { useApi } from '@/hooks/use-api'
+import { TaskUpdateInput } from '../schemas/task.schema'
 
-export default function TasksPage() {
-  const { data, error, callApi } = useApi(
-    '/api/get-tasks?includeSubtasks=false',
-    { key: 'value' },
-    { method: 'GET' }
-  )
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  interface Task {
-    id: string
-    title: string
-    status: string
-    statusText: string
-    icon: string
-  }
-
-  interface TaskState {
-    planned: Task[]
-    anytime: Task[]
-  }
-
-  const [tasks, setTasks] = React.useState<TaskState>({
-    planned: [],
-    anytime: [],
-  })
-
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  interface Subtask {
-    id: string
-    title: string
-    order: number
-    status: string
-  }
-  const [subtasks, setSubtasks] = useState<Subtask[]>([])
-  const [subtaskInput, setSubtaskInput] = useState('')
-
-  interface FormData {
-    title: string
-    type: 'planned' | 'anytime'
-    category: string
-    start: string
-    startTime: string
-    end: string
-    endTime: string
-    repeat: string
-  }
-
-  useEffect(() => {
-    callApi()
-  }, [callApi])
-
-  useEffect(() => {
-    const userTasks = data?.data
-    if (userTasks) {
-      // Separate tasks into planned and anytime
-      const planned = userTasks
-        .filter((item: { task: { type: string } }) => item.task.type === 'planned')
-        .map((item: { task: { id: string; task: string } }) => ({
-          id: item.task.id,
-          title: item.task.task,
-          status: 'active',
-          statusText: '5m',
-          icon: 'checkmark',
-        }))
-
-      const anytime = userTasks
-        .filter((item: { task: { type: string } }) => item.task.type === 'anytime')
-        .map((item: { task: { id: string; task: string } }) => ({
-          id: item.task.id,
-          title: item.task.task,
-          status: 'active',
-          statusText: '5m', // You may want to calculate this based on actual data
-          icon: 'checkmark',
-        }))
-
-      setTasks({
-        planned,
-        anytime,
-      })
-    }
-  }, [data])
-
-  // Replace the hardcoded tasks with the fetched data
-  const plannedTasks = tasks.planned
-  const anytimeTasks = tasks.anytime
-
-  // Drawer form logic
-  const { control, handleSubmit, reset } = useForm<FormData>({
-    defaultValues: {
-      title: '',
-      type: 'planned',
-      category: 'Visuals',
-      start: '',
-      startTime: '',
-      end: '',
-      endTime: '',
-      repeat: 'None',
+const TaskPage = () => {
+  const {
+    data: tasks,
+    loading,
+    error,
+    callApi,
+  } = useApi('/api/get-tasks', null, {
+    params: {
+      includeSubtasks: true,
+      type: 'all',
     },
   })
 
-  // Add subtask
-  const handleAddSubtask = () => {
-    if (subtaskInput.trim()) {
-      setSubtasks([
-        ...subtasks,
-        {
-          id: Date.now().toString(),
-          title: subtaskInput,
-          order: subtasks.length,
-          status: 'pending',
-        },
-      ])
-      setSubtaskInput('')
-    }
+  useEffect(() => {
+    callApi()
+  }, [])
+
+  if (loading) {
+    return <div className="min-h-screen bg-black p-4 text-white">Loading tasks...</div>
   }
 
-  // Drag-and-drop handlers
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over) return
-    if (active.id !== over.id) {
-      const oldIndex = subtasks.findIndex((t) => t.id === active.id)
-      const newIndex = subtasks.findIndex((t) => t.id === over.id)
-      setSubtasks(arrayMove(subtasks, oldIndex, newIndex))
-    }
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black p-4 text-white">
+        Error loading tasks: {error.message}
+      </div>
+    )
   }
 
-  // Save task
-  const onSave = (data: FormData) => {
-    // Convert date/time to UTC ISO
-    const startDate = new Date(`${data.start}T${data.startTime}:00Z`).toISOString()
-    const endDate = new Date(`${data.end}T${data.endTime}:00Z`).toISOString()
-    const newTask = {
-      id: Date.now().toString(),
-      title: data.title,
-      status: 'active',
-      statusText: '0m',
-      icon: 'checkmark',
-      type: data.type,
-      category: data.category,
-      start: startDate,
-      end: endDate,
-      repeat: data.repeat,
-      subtasks,
-    }
-    setTasks((prev) => ({
-      ...prev,
-      [data.type as keyof TaskState]: [...prev[data.type as keyof TaskState], newTask],
-    }))
-    setDrawerOpen(false)
-    reset()
-    setSubtasks([])
-  }
-
-  // Cancel drawer
-  const onCancel = () => {
-    setDrawerOpen(false)
-    reset()
-    setSubtasks([])
+  if (!tasks?.length) {
+    return <div className="min-h-screen bg-black p-4 text-white">No tasks found.</div>
   }
 
   return (
-    <MainLayout>
-      <AppHeader date={new Date()} />
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4">
+        <div className="flex items-center">
+          {/* Avatar Placeholder */}
+          <div className="mr-3 h-10 w-10 rounded-full bg-gray-700"></div>
+          <div>
+            <h1 className="flex items-center text-xl font-bold">
+              Thursday{' '}
+              <span className="ml-1">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </span>
+            </h1>
+            <p className="text-sm text-gray-400">May 15</p>
+          </div>
+        </div>
+        <div className="flex items-center">
+          {/* Calendar Icon Placeholder */}
+          <div className="mr-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          {/* Filter Icon Placeholder */}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2"
+              />
+            </svg>
+          </div>
+        </div>
+      </header>
 
-      <div className="pb-20">
-        <TasksSection title="PLANNED" count={plannedTasks.length}>
-          {plannedTasks.map((task) => (
-            <TaskCard
+      {/* Today's Goals */}
+      <div className="p-4">
+        <h2 className="mb-4 text-lg font-semibold">Today&apos;s goals ({tasks?.length})</h2>
+        <div className="space-y-3">
+          {tasks?.map((task: TaskUpdateInput) => (
+            <div
               key={task.id}
-              title={task.title}
-              status={task.status}
-              statusText={task.statusText}
-              icon={task.icon}
-            />
+              className="flex items-center justify-between rounded-lg bg-gray-800 p-4"
+            >
+              <div>
+                <p className="text-white">{task.task}</p>
+              </div>
+              {/* Checkbox Placeholder */}
+              <div
+                className={`h-6 w-6 rounded-full border-2 ${task.is_completed ? 'border-purple-500 bg-purple-500' : 'border-gray-500'}`}
+              >
+                {task.is_completed && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </div>
           ))}
-        </TasksSection>
-
-        <TasksSection title="ANYTIME" count={anytimeTasks.length}>
-          {anytimeTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              title={task.title}
-              status={task.status}
-              statusText={task.statusText}
-              icon={task.icon}
-            />
-          ))}
-        </TasksSection>
-
-        <ReviewDayCard />
+        </div>
       </div>
 
-      <FloatingActionButton onClick={() => setDrawerOpen(true)} />
-      <QuickActionsBar />
-      <BottomNavBar />
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-20 right-6 flex flex-col items-center space-y-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-600 shadow-lg">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 11H5m14 0a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+            />
+          </svg>{' '}
+          {/* Placeholder Microphone Icon */}
+        </div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 shadow-lg">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          </svg>{' '}
+          {/* Placeholder Plus Icon */}
+        </div>
+      </div>
 
-      {/* Drawer for adding task */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl bg-[#181818] text-white">
-          <DrawerHeader>
-            <DrawerTitle>Add New Task</DrawerTitle>
-          </DrawerHeader>
-          <form onSubmit={handleSubmit(onSave)} className="px-4 pb-4">
-            <Controller
-              name="title"
-              control={control}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  placeholder="Task Title"
-                  className="mb-3 w-full rounded-lg bg-[#222] p-3 text-lg font-semibold"
-                  required
-                />
-              )}
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-around bg-gray-900">
+        <div className="flex flex-col items-center text-purple-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m0 0l7 7M19 10v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1-1v-4a1 1 0 00-1-1h-2a1 1 0 00-1 1v4a1 1 0 01-1 1m-6 0h16"
             />
-            <div className="mb-3 flex gap-2">
-              <Controller
-                name="category"
-                control={control}
-                render={({ field }) => (
-                  <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
-                    <option value="Visuals">Visuals</option>
-                    <option value="Work">Work</option>
-                    <option value="Personal">Personal</option>
-                  </select>
-                )}
-              />
-              <Controller
-                name="type"
-                control={control}
-                render={({ field }) => (
-                  <select {...field} className="flex-1 rounded-lg bg-[#222] p-3">
-                    <option value="planned">Planned</option>
-                    <option value="anytime">Anytime</option>
-                  </select>
-                )}
-              />
-            </div>
-            <div className="mb-3 flex gap-2">
-              <Controller
-                name="start"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="date"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-              <Controller
-                name="startTime"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="time"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-            </div>
-            <div className="mb-3 flex gap-2">
-              <Controller
-                name="end"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="date"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-              <Controller
-                name="endTime"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    {...field}
-                    type="time"
-                    className="flex-1 rounded-lg bg-[#222] p-3"
-                    required
-                  />
-                )}
-              />
-            </div>
-            <Controller
-              name="repeat"
-              control={control}
-              render={({ field }) => (
-                <select {...field} className="mb-3 w-full rounded-lg bg-[#222] p-3">
-                  <option value="None">None</option>
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                </select>
-              )}
+          </svg>{' '}
+          {/* Placeholder Home Icon */}
+          <span className="text-xs">Home</span>
+        </div>
+        <div className="flex flex-col items-center text-gray-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
             />
-            {/* Subtasks */}
-            <div className="mb-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-semibold">Sub-tasks</span>
-                <button type="button" onClick={handleAddSubtask} className="text-purple-400">
-                  Add
-                </button>
-              </div>
-              <div className="mb-2 flex gap-2">
-                <input
-                  value={subtaskInput}
-                  onChange={(e) => setSubtaskInput(e.target.value)}
-                  placeholder="Sub-task title"
-                  className="flex-1 rounded-lg bg-[#222] p-2"
-                />
-              </div>
-              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext
-                  items={subtasks.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {subtasks.map((subtask) => (
-                    <div
-                      key={subtask.id}
-                      className="mb-2 flex items-center rounded-lg bg-[#222] p-2"
-                    >
-                      <span className="mr-2 cursor-move">≡</span>
-                      <span className="flex-1">{subtask.title}</span>
-                    </div>
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-            <DrawerFooter>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="mb-2 w-full rounded-lg bg-[#333] py-3 font-semibold text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-purple-500 py-3 font-semibold text-white"
-              >
-                Save
-              </button>
-            </DrawerFooter>
-          </form>
-        </DrawerContent>
-      </Drawer>
-    </MainLayout>
+          </svg>{' '}
+          {/* Placeholder Focus Icon */}
+          <span className="text-xs">Focus</span>
+        </div>
+        <div className="flex flex-col items-center text-gray-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>{' '}
+          {/* Placeholder Discover Icon */}
+          <span className="text-xs">Discover</span>
+        </div>
+      </div>
+    </div>
   )
 }
+
+export default TaskPage
