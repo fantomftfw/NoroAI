@@ -20,6 +20,8 @@ export const taskBaseSchema = z.object({
     .enum([TASK_DIFFICULTY.EASY, TASK_DIFFICULTY.MEDIUM, TASK_DIFFICULTY.HARD])
     .optional()
     .default(TASK_DIFFICULTY.MEDIUM),
+  reminderEnabled: z.boolean().default(false),
+  reminderTime: z.string().optional().default(''),
 })
 
 // Schema for creating a new task
