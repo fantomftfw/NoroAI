@@ -9,7 +9,6 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { useApi } from '@/hooks/use-api'
 import axios from 'axios'
 
 interface RecordingDialogProps {
@@ -22,17 +21,6 @@ export function RecordingDialog({ open, onOpenChange }: RecordingDialogProps) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
-
-  //   const { callApi } = useApi(
-  //     '/api/process-task',
-  //     {
-  //       audio: audioFile,
-  //       currentDateTime: new Date().toISOString(),
-  //     },
-  //     {
-  //       method: 'POST',
-  //     }
-  //   )
 
   const startRecording = async () => {
     try {
