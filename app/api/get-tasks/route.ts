@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerSupabaseClient()
 
-    let query = supabase.from('tasks').select('*').eq('user_id', userId).eq('is_deleted', false)
+    let query = supabase.from('tasks').select('*').eq('user_id', userId)
 
     // Apply type filter if not 'all'
     if (type !== 'all') {
