@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
               nullable: false,
             },
             totalEstimatedTime: {
-              type: Type.STRING,
+              type: Type.NUMBER,
               description: 'estimated time of main task',
               nullable: false,
             },
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
                     nullable: false,
                   },
                   estimatedTime: {
-                    type: Type.STRING,
+                    type: Type.NUMBER,
                     description: 'estimated time of sub task',
                     nullable: false,
                   },
