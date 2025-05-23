@@ -122,9 +122,9 @@ const TaskPage = () => {
               </div>
               {/* Checkbox Placeholder */}
               <div
-                className={`h-6 w-6 rounded-full border-2 ${task.is_completed ? 'border-purple-500 bg-purple-500' : 'border-gray-500'}`}
+                className={`h-6 w-6 rounded-full border-2 ${task.isCompleted ? 'border-purple-500 bg-purple-500' : 'border-gray-500'}`}
               >
-                {task.is_completed && (
+                {task.isCompleted && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5 text-white"

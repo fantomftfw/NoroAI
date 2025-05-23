@@ -1,13 +1,13 @@
-import { Task, Subtask } from "@/types/database.types";
+import { Task, Subtask } from '@/types/database.types'
 
-import { TaskInput, TaskUpdateInput } from "@/app/schemas/task.schema";
-import { TaskResponse, TaskUpdateResponse } from "@/app/types/api.types";
+import { TaskInput, TaskUpdateInput } from '@/app/schemas/task.schema'
+import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types'
 
 export interface ITaskRepository {
-    createTask(data: TaskInput): Promise<TaskResponse>;
-    updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse>;
-    getTaskById(id: string): Promise<Task | null>;
-    getSubtasksByTaskId(taskId: string): Promise<Subtask[]>;
-    deleteTask(id: string): Promise<boolean>;
-    updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse>;
+  createTask(data: TaskInput): Promise<TaskResponse>
+  updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse>
+  getTaskById(id: string): Promise<Task | null>
+  getSubtasksByTaskId(taskId: string): Promise<Subtask[]>
+  deleteTask(id: string): Promise<boolean>
+  updateTaskStatus(id: string, isCompleted: boolean): Promise<TaskUpdateResponse>
 }

@@ -59,7 +59,7 @@ json{
         "startUTCTimestamp": string | null,
         "endUTCTimestamp": string | null,
         "spiciness": number (default: 3),
-        "is_completed": boolean (default: false),
+        "isCompleted": boolean (default: false),
         "order": number (default: 0),
         "totalEstimatedTime": number (default: 0)
     }
@@ -93,7 +93,7 @@ Set to null if no duration/end time is specified
 
 
 spiciness: Default to 3 unless otherwise specified
-is_completed: Default to false
+isCompleted: Default to false
 order: Should be 0
 totalEstimatedTime: Default to 0 unless duration explicitly mentioned
 
@@ -126,7 +126,7 @@ json{
         "startUTCTimestamp": "2025-05-03T14:00:00.000Z",
         "endUTCTimestamp": null,
         "spiciness": 3,
-        "is_completed": false,
+        "isCompleted": false,
         "order": 0,
         "totalEstimatedTime": 0
     }
@@ -146,7 +146,7 @@ json{
         "startUTCTimestamp": "2025-05-15T20:30:00.000Z",
         "endUTCTimestamp": null,
         "spiciness": 3,
-        "is_completed": false,
+        "isCompleted": false,
         "order": 0,
         "totalEstimatedTime": 0
     }
@@ -166,7 +166,7 @@ json{
         "startUTCTimestamp": "2025-05-16T00:00:00.000Z",
         "endUTCTimestamp": null,
         "spiciness": 3,
-        "is_completed": false,
+        "isCompleted": false,
         "order": 0,
         "totalEstimatedTime": 0
     }
@@ -186,7 +186,7 @@ json{
         "startUTCTimestamp": null,
         "endUTCTimestamp": null,
         "spiciness": 3,
-        "is_completed": false,
+        "isCompleted": false,
         "order": 0,
         "totalEstimatedTime": 0
     }

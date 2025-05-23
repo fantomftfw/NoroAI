@@ -36,7 +36,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
               task_id: task.id,
               title: subtask.title,
               order: subtask.order,
-              is_completed: subtask.is_completed,
+              isCompleted: subtask.isCompleted,
             }))
           )
           .select()
@@ -80,7 +80,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
     // Process each subtask
     for (const subtask of updatedSubtasks) {
-      if (subtask._delete && subtask.id) {
+      if (subtask.id) {
         // Delete the subtask
         await this.supabase.from('sub-tasks').delete().eq('id', subtask.id)
 
@@ -95,7 +95,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           .update({
             title: subtask.title ?? currentSubtask.title,
             order: newOrder,
-            status: subtask.is_completed ?? currentSubtask.is_completed,
+            status: subtask.isCompleted ?? currentSubtask.isCompleted,
           })
           .eq('id', subtask.id)
       } else if (!subtask.id) {
@@ -105,7 +105,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           task_id: taskId,
           title: subtask.title,
           order: subtask.order ?? maxOrder,
-          status: subtask.is_completed,
+          status: subtask.isCompleted,
         })
       }
     }
@@ -140,7 +140,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
       if (data.tag) updateData.category = data.tag
       if (data.type) updateData.type = data.type
       if (data.startUTCTimestamp) updateData.startUTCTimestamp = data.startUTCTimestamp
-      if (data.is_completed) updateData.is_completed = data.is_completed
+      if (data.isCompleted) updateData.isCompleted = data.isCompleted
 
       // if (data.spiciness) updateData.spiciness = data.spiciness;
       // if spiciness changes then sub task will be generated and sent  :: currently we are not dealing with it
@@ -196,11 +196,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
     return !error
   }
 
-  async updateTaskStatus(id: string, is_completed: boolean): Promise<TaskUpdateResponse> {
+  async updateTaskStatus(id: string, isCompleted: boolean): Promise<TaskUpdateResponse> {
     try {
       const { data, error } = await this.supabase
         .from('tasks')
-        .update({ is_completed: is_completed })
+        .update({ isCompleted: isCompleted })
         .eq('id', id)
         .select()
         .single()
@@ -220,12 +220,12 @@ export class SupabaseTaskRepository implements ITaskRepository {
   }
   async updateSubtaskStatus(
     id: string,
-    is_completed: boolean
+    isCompleted: boolean
   ): Promise<{ data: Subtask | null; error: Error | null }> {
     try {
       const { data, error } = await this.supabase
         .from('sub-tasks')
-        .update({ is_completed: is_completed })
+        .update({ isCompleted: isCompleted })
         .eq('id', id)
         .select()
         .single()

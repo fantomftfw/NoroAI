@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
                     description: 'title of sub task',
                     nullable: false,
                   },
-                  estimateTime: {
+                  estimatedTime: {
                     type: Type.STRING,
                     description: 'estimated time of sub task',
                     nullable: false,

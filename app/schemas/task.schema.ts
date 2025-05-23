@@ -12,11 +12,11 @@ export const taskBaseSchema = z.object({
     .optional()
     .nullable(),
   spiciness: z.number().optional().default(3),
-  is_completed: z.boolean().optional().default(false),
+  isCompleted: z.boolean().optional().default(false),
   order: z.number().optional().default(0),
   totalEstimatedTime: z.number().optional().default(0),
   note: z.string().optional().default(''),
-  goal_difficulty: z
+  goalDifficulty: z
     .enum([TASK_DIFFICULTY.EASY, TASK_DIFFICULTY.MEDIUM, TASK_DIFFICULTY.HARD])
     .optional()
     .default(TASK_DIFFICULTY.MEDIUM),
@@ -29,7 +29,7 @@ export const createTaskSchema = taskBaseSchema.extend({
       z.object({
         title: z.string(),
         order: z.number(),
-        is_completed: z.boolean().optional().default(false),
+        isCompleted: z.boolean().optional().default(false),
         estimatedTime: z.number().default(0),
       })
     )
@@ -39,15 +39,15 @@ export const createTaskSchema = taskBaseSchema.extend({
 // Schema for updating an existing task
 export const updateTaskSchema = taskBaseSchema.partial().extend({
   id: z.string().uuid(),
-  is_completed: z.boolean().optional().default(false),
+  isCompleted: z.boolean().optional().default(false),
   subtasks: z
     .array(
       z.object({
         id: z.string().uuid().optional(),
         title: z.string().optional(),
         order: z.number().optional(),
-        is_completed: z.boolean().optional(),
-        _delete: z.boolean().optional().default(false),
+        isCompleted: z.boolean().optional(),
+        estimatedTime: z.number().optional().default(0),
       })
     )
     .optional(),
