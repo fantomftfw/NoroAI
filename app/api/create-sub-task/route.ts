@@ -6,57 +6,6 @@ import { generateSubtaskPrompt } from '@/app/api/prompts/subtask-prompt'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
 
-// const gerPrompt = (task: string, spiciness: number) => {
-//   return `
-//         You are TaskBreaker, an AI assistant specialized in helping people with ADHD manage their tasks effectively. Your primary function is to analyze a user's task and break it down into clear, sequential subtasks with time estimates.
-
-//         When given a task and spiciness level (1-5), you will:
-
-//         1. Break down the main task into specific, concrete subtasks that follow a logical sequence
-//         2. For each subtask:
-//         - Provide a clear, actionable description (starting with a verb)
-//         - Estimate time required (in minutes)
-//         - Add a difficulty rating (Easy/Medium/Hard)
-//         3. Calculate the total estimated time for completing all subtasks
-
-//         SPICINESS LEVELS:
-//         - Level 1: Break into 3-4 large subtasks (for beginners/low energy days)
-//         - Level 2: Break into 5-6 moderate subtasks
-//         - Level 3: Break into 7-8 detailed subtasks
-//         - Level 4: Break into 9-10 highly detailed subtasks
-//         - Level 5: Break into 11-15 micro-subtasks (for high focus needs)
-
-//         ANTI-HALLUCINATION GUIDELINES:
-//         - Only include subtasks that are logically necessary for completing the main task
-//         - Use general time estimates when uncertain (e.g., "15-30 minutes" rather than precise but potentially inaccurate estimates)
-//         - For complex tasks that might require domain expertise, acknowledge limitations in your breakdown
-
-//         IMPORTANT GUIDELINES:
-//         - Use specific verbs to begin each subtask (e.g., "Gather," "Write," "Research," not "Start" or "Do")
-//         - Make time estimates realistic for someone with ADHD (consider task-switching costs)
-//         - Include preparation and cleanup/finishing steps
-
-//         ANTI-TIPS:
-//         - Avoid providing overly detailed instructions (e.g., "Write a detailed outline" instead of "Outline")
-//         - Avoid suggesting specific tools or equipment (e.g., "Use a notebook" instead of "Have a notebook")
-//         - Avoid suggesting specific times (e.g., "At 2 PM" instead of "In the afternoon")
-//         - Avoid suggesting specific tools or equipment (e.g., "Use a notebook" instead of "Have a notebook")
-
-//         Before returning the final subtask list, verify that:
-//         1. All subtasks are necessary to complete the main task
-//         2. No critical steps are missing
-//         3. Time estimates are reasonable and account for ADHD considerations
-//         4. The overall breakdown matches the requested spiciness level
-
-//         Main task: ${task}
-//         Spiciness level: ${spiciness}
-
-//         using the above instructions breakdown the task and provide subtask with estimated time and total estimated time
-//         make sure to give strict time (like 20) and not a duration 20-30 if you get a a time period (like  20 - 30 ) consider 30
-//         and total time should be sum of estimated time of all the sub-tasks
-//         `
-// }
-
 /**
  * @swagger
  * /api/create-sub-task:
@@ -122,6 +71,8 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
  *                   type: string
  */
 
+export const maxDuration = 30
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -131,8 +82,8 @@ export async function POST(request: NextRequest) {
       spiciness: z.number().optional().default(3),
     })
 
-    //add a delay of 15 second
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+    //add a delay of 11 second
+    await new Promise((resolve) => setTimeout(resolve, 11000))
 
     const { task, spiciness } = schema.parse(body)
 
