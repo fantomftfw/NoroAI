@@ -131,6 +131,9 @@ export async function POST(request: NextRequest) {
       spiciness: z.number().optional().default(3),
     })
 
+    //add a delay of 15 second
+    await new Promise((resolve) => setTimeout(resolve, 15000))
+
     const { task, spiciness } = schema.parse(body)
 
     if (!task) {
