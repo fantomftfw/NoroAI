@@ -103,9 +103,7 @@ import { Task, Subtask } from '@/types/database.types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { auth } from '@clerk/nextjs/server'
 
-export const config = {
-  runtime: 'edge',
-}
+export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   try {
