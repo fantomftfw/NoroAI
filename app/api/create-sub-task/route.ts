@@ -1,75 +1,13 @@
-import { GoogleGenAI, Type } from '@google/genai'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { zodTextFormat } from 'openai/helpers/zod'
+import OpenAI from 'openai'
 
 import { generateSubtaskPrompt } from '@/app/api/prompts/subtask-prompt'
 
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-
-/**
- * @swagger
- * /api/create-sub-task:
- *   post:
- *     summary: Create subtasks for a main task
- *     description: Breaks down a main task into manageable subtasks using AI, with customizable complexity (spiciness) level
- *     tags:
- *       - Create Subtask With AI
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - task
- *             properties:
- *               task:
- *                 type: string
- *                 description: The main task to break down into subtasks
- *               spiciness:
- *                 type: number
- *                 description: Complexity level of subtask breakdown (1-5)
- *                 minimum: 1
- *                 maximum: 5
- *                 default: 3
- *     responses:
- *       200:
- *         description: Successfully generated subtasks
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 task:
- *                   type: string
- *                   description: The original main task
- *                 subtasks:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       title:
- *                         type: string
- *                         description: Title of the subtask
- *       400:
- *         description: Bad request - Invalid input
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- */
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 export const maxDuration = 30
 
@@ -82,69 +20,51 @@ export async function POST(request: NextRequest) {
       spiciness: z.number().optional().default(3),
     })
 
-    //add a delay of 11 second
-    await new Promise((resolve) => setTimeout(resolve, 11000))
-
     const { task, spiciness } = schema.parse(body)
 
     if (!task) {
       return NextResponse.json({ error: 'Task is required' }, { status: 400 })
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
-      contents: generateSubtaskPrompt(task, +spiciness),
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            task: {
-              type: Type.STRING,
-              description: 'The main task name',
-              nullable: false,
-            },
-            totalEstimatedTime: {
-              type: Type.NUMBER,
-              description: 'estimated time of main task',
-              nullable: false,
-            },
-            tag: {
-              type: Type.STRING,
-              description: 'tag of main task',
-              nullable: false,
-            },
-            subtasks: {
-              type: Type.ARRAY,
-              description: 'sub tasks of main task',
-              nullable: false,
-              items: {
-                type: Type.OBJECT,
-                description: 'sub task of main task',
-                nullable: false,
-                properties: {
-                  title: {
-                    type: Type.STRING,
-                    description: 'title of sub task',
-                    nullable: false,
-                  },
-                  estimatedTime: {
-                    type: Type.NUMBER,
-                    description: 'estimated time of sub task',
-                    nullable: false,
-                  },
-                },
-              },
-            },
-          },
-          required: ['task', 'totalEstimatedTime', 'subtasks'],
-        },
-      },
+    const responseSchema = z.object({
+      task: z.string().describe('The main task name'),
+      totalEstimatedTime: z.number().describe('estimated time of main task'),
+      tag: z.string().describe('tag of main task'),
+      subtasks: z
+        .array(
+          z
+            .object({
+              title: z.string().describe('title of sub task'),
+              estimatedTime: z.number().describe('estimated time of sub task'),
+            })
+            .describe('sub task of main task')
+        )
+        .describe('sub tasks of main task'),
     })
 
-    console.log('🚀 ~ POST ~ response:', JSON.stringify(response, null, 2))
+    const response = await openai.responses.create({
+      model: 'gpt-4.1-nano',
+      input: [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: generateSubtaskPrompt(task, +spiciness),
+            },
+          ],
+        },
+      ],
+      text: {
+        format: zodTextFormat(responseSchema, 'event'),
+      },
+      temperature: 0.3,
+      top_p: 0.3,
+      max_output_tokens: 2048,
+      store: true,
+    })
 
-    const parsedResponseText = JSON.parse(response.text || '{}')
+    const parsedResponseText = JSON.parse(response.output_text || '{}')
 
     return NextResponse.json({ result: parsedResponseText }, { status: 201 })
   } catch (error: unknown) {

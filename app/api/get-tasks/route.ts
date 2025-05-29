@@ -117,7 +117,6 @@ export async function GET(request: NextRequest) {
 
     let query = supabase.from('tasks').select('*').eq('user_id', userId)
 
-    // Apply type filter if not 'all'
     if (type !== 'all') {
       query = query.eq('type', type)
     }
