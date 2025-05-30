@@ -191,7 +191,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
   }
 
   async deleteTask(id: string): Promise<boolean> {
-    const { error } = await this.supabase.from('tasks').update({ is_deleted: true }).eq('id', id)
+    console.log({ id })
+    const { error } = await this.supabase.from('tasks').delete().eq('id', id)
 
     return !error
   }
