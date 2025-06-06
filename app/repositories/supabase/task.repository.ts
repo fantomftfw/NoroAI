@@ -12,12 +12,96 @@ export class SupabaseTaskRepository implements ITaskRepository {
     try {
       const { userId } = await auth()
 
+      const date = taskData.startUTCTimestamp?.split('T')[0] 
+      const startDate = date + 'T00:00:00Z'
+      const endDate = date + 'T23:59:59Z'
+
+      if(taskData.type !== 'someday' && !date){ 
+       throw new Error('Date is required for allday and planned tasks')
+       // this error is being thrown but not being handled
+      }
+    
+      /*
+      *  todo : add the test on type and date relation 
+      *   use factory pattern
+      * 
+      */
+
+      // Calculate the order based on task type and existing tasks
+      const { data: existingTasks, error: fetchError } = await this.supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('startUTCTimestamp', startDate)
+        .lte('startUTCTimestamp', endDate)
+        .order('order', { ascending: true })
+
+      if (fetchError) {
+        return { data: null, error: fetchError }
+      }
+
+      let newOrder = 0
+
+      // shift the order of existing tasks if needed
+      if (existingTasks && existingTasks.length > 0) {
+        if (taskData.type === 'allday') {
+          // For all-day tasks, find the last all-day task or place at the beginning
+          const lastAllDayTask = existingTasks.filter((t) => t.type === 'allday').pop()
+          newOrder = lastAllDayTask ? lastAllDayTask.order + 1 : 0
+
+          // Shift planned tasks down
+          await Promise.all(
+            existingTasks
+              .filter((t) => t.type !== 'allday' && t.order >= newOrder)
+              .map((t) =>
+                this.supabase
+                  .from('tasks')
+                  .update({ order: t.order + 1 })
+                  .eq('id', t.id)
+              )
+          )
+        } else if (taskData.type === 'planned' && taskData.startUTCTimestamp) {
+
+          // For planned tasks, insert based on timestamp
+        
+          const insertIndex = existingTasks.findIndex(
+            (t) =>
+              t.type === 'planned' &&
+              t.startUTCTimestamp &&
+              t.startUTCTimestamp > taskData.startUTCTimestamp!
+          )
+
+          if (insertIndex === -1) {
+            // Add to the end if no later tasks found
+            newOrder = existingTasks.length
+          } else {
+            newOrder = insertIndex
+            // Shift later tasks down
+            await Promise.all(
+              existingTasks.slice(insertIndex).map((t) =>
+                this.supabase
+                  .from('tasks')
+                  .update({ order: t.order + 1 })
+                  .eq('id', t.id)
+              )
+            )
+          }
+        } else {
+          // For tasks without timestamp, add to the end
+          if(taskData.type === 'someday'){
+            newOrder = 0
+          }
+        }
+      }
+
+      // Insert the new task after changing the order of existing tasks
       const { data: task, error: taskError } = await this.supabase
         .from('tasks')
         .insert([
           {
             ...taskData,
             user_id: userId,
+            order: newOrder,
           },
         ])
         .select()

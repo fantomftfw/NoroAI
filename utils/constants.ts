@@ -4,13 +4,12 @@ export const TASK_TYPE = {
   PLANNED: 'planned',
 } as const
 
+export type TaskType = (typeof TASK_TYPE)[keyof typeof TASK_TYPE]
+
 export const TASK_DIFFICULTY = {
   EASY: 'easy',
   MEDIUM: 'medium',
   HARD: 'hard',
-}
-
-export const TASK_STATUS = {
-  PENDING: 'pending',
-  COMPLETED: 'completed',
 } as const
+
+export type TaskDifficulty = (typeof TASK_DIFFICULTY)[keyof typeof TASK_DIFFICULTY]

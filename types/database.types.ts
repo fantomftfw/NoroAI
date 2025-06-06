@@ -1,29 +1,29 @@
+import { TaskType, TaskDifficulty } from '@/utils/constants'
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface Task {
-  id: string
-  task: string
-  category: string
-  type: 'planned' | 'allday' | 'someday'
-  startUTCTimestamp: string
-  endUTCTimestamp: string
-  spiciness: number
-  user_id: string
-  created_at: string
-  isCompleted: boolean
-  is_deleted: boolean
+  title: string
+  type?: TaskType
+  tag?: string
+  startUTCTimestamp?: string | null
+  spiciness?: number
+  isCompleted?: boolean
+  order?: number
+  totalEstimatedTime?: number
+  note?: string
+  goalDifficulty?: TaskDifficulty
+  reminderEnabled: boolean
+  reminderTime?: string
+  subtasks?: Subtask[]
 }
 
 export interface Subtask {
-  id: string
-  task_id: string
   title: string
   order: number
-  isCompleted: boolean
-  user_id: string
-  created_at: string
+  isCompleted?: boolean
+  estimatedTime?: number
 }
-
 export type Database = {
   graphql_public: {
     Tables: {
