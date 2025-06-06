@@ -1,102 +1,4 @@
-/**
- * @swagger
- * components:
- *   schemas:
- *     Task:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *         task:
- *           type: string
- *         category:
- *           type: string
- *         type:
- *           type: string
- *           enum: [planned, anytime]
- *         startUTCTimestamp:
- *           type: string
- *           format: date
- *         endUTCTimestamp:
- *           type: string
- *           format: date
- *         spiciness:
- *           type: number
- *         user_id:
- *           type: string
- *           format: uuid
- *         created_at:
- *           type: string
- *           format: date-time
- *     Subtask:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *         task_id:
- *           type: string
- *           format: uuid
- *         title:
- *           type: string
- *         order:
- *           type: number
- *         status:
- *           type: string
- *           enum: [pending, completed]
- *         created_at:
- *           type: string
- *           format: date-time
- *
- * @swagger
- * /api/get-tasks:
- *   get:
- *     summary: Get all tasks for the authenticated user
- *     parameters:
- *       - in: query
- *         name: type
- *         schema:
- *           type: string
- *           enum: [planned, anytime, all]
- *         required: false
- *         description: Filter tasks by type (defaults to "all")
- *       - in: query
- *         name: includeSubtasks
- *         schema:
- *           type: boolean
- *         required: false
- *         description: Whether to include subtasks in the response (defaults to false)
- *       - in: query
- *         name: userId
- *         schema:
- *           type: string
- *         required: false
- *         description: User ID to get tasks for (only works for authenticated users)
- *     responses:
- *       200:
- *         description: Successfully retrieved tasks
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       task:
- *                         $ref: '#/components/schemas/Task'
- *                       subtasks:
- *                         type: array
- *                         items:
- *                           $ref: '#/components/schemas/Subtask'
- *       401:
- *         description: Unauthorized - User is not authenticated
- *       500:
- *         description: Internal server error
- */
+
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Task, Subtask } from '@/types/database.types'
@@ -130,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Execute the query
-    const { data: tasks, error: tasksError } = await query.order('created_at', { ascending: false })
+    const { data: tasks, error: tasksError } = await query.order('order', { ascending: true })
 
     if (tasksError) {
       console.error('Error fetching tasks:', tasksError)
