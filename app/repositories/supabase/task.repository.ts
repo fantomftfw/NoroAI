@@ -12,20 +12,20 @@ export class SupabaseTaskRepository implements ITaskRepository {
     try {
       const { userId } = await auth()
 
-      const date = taskData.startUTCTimestamp?.split('T')[0] 
+      const date = taskData.startUTCTimestamp?.split('T')[0]
       const startDate = date + 'T00:00:00Z'
       const endDate = date + 'T23:59:59Z'
 
-      if(taskData.type !== 'someday' && !date){ 
-       throw new Error('Date is required for allday and planned tasks')
-       // this error is being thrown but not being handled
+      if (taskData.type !== 'someday' && !date) {
+        throw new Error('Date is required for allday and planned tasks')
+        // this error is being thrown but not being handled
       }
-    
+
       /*
-      *  todo : add the test on type and date relation 
-      *   use factory pattern
-      * 
-      */
+       *  todo : add the test on type and date relation
+       *   use factory pattern
+       *
+       */
 
       // Calculate the order based on task type and existing tasks
       const { data: existingTasks, error: fetchError } = await this.supabase
@@ -61,9 +61,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
               )
           )
         } else if (taskData.type === 'planned' && taskData.startUTCTimestamp) {
-
           // For planned tasks, insert based on timestamp
-        
+
           const insertIndex = existingTasks.findIndex(
             (t) =>
               t.type === 'planned' &&
@@ -88,7 +87,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           }
         } else {
           // For tasks without timestamp, add to the end
-          if(taskData.type === 'someday'){
+          if (taskData.type === 'someday') {
             newOrder = 0
           }
         }
@@ -120,7 +119,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
               task_id: task.id,
               title: subtask.title,
               order: subtask.order,
-              isCompleted: subtask.isCompleted,
+              isCompleted: subtask.isCompleted || false,
+              estimatedTime: subtask.estimatedTime,
             }))
           )
           .select()
@@ -144,16 +144,17 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
   }
 
-
-  async rearrangeTasks(tasks: TaskReorderInput): Promise<{ data: Task[]; error: null } | { data: null; error: Error }> {
+  async rearrangeTasks(
+    tasks: TaskReorderInput
+  ): Promise<{ data: Task[]; error: null } | { data: null; error: Error }> {
     const { userId } = await auth()
 
-    if(!userId){
+    if (!userId) {
       throw new Error('User not found')
     }
 
     try {
-      const updatePromises = tasks.map(({id,order}) =>
+      const updatePromises = tasks.map(({ id, order }) =>
         this.supabase
           .from('tasks')
           .update({ order: order })
@@ -162,29 +163,25 @@ export class SupabaseTaskRepository implements ITaskRepository {
           .select()
       )
 
-  
       // Execute all updates in a transaction
       const results = await Promise.all(updatePromises)
-  
+
       // Check for any errors in the results
       const hasError = results.some(({ error }) => error)
       if (hasError) {
         return { data: null, error: new Error('Failed to update task orders') }
       }
-  
+
       // Fetch the updated tasks to return
-      return { data: results.flatMap(({ data }) => data || []), error: null } 
-      
+      return { data: results.flatMap(({ data }) => data || []), error: null }
     } catch (error) {
       console.error('Error rearranging task:', error)
-          return { data: null, error: error as Error }
+      return { data: null, error: error as Error }
     }
-        
   }
 
   async updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse> {
     try {
-
       // Update task - creating update object from info provided
       const updateData: Partial<Task> = {}
       if (data.title) updateData.title = data.title
@@ -211,7 +208,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
           return { data: null, error: updateError }
         }
       }
-
 
       return { data: updatedTask, error: null }
     } catch (error) {
