@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Database, Task, Subtask } from '@/types/database.types'
 import { ITaskRepository } from '../interfaces/task.repository'
-import { TaskInput, TaskUpdateInput } from '@/app/schemas/task.schema'
+import { TaskInput, TaskReorderInput, TaskUpdateInput } from '@/app/schemas/task.schema'
 import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types'
 import { auth } from '@clerk/nextjs/server'
 
@@ -144,84 +144,51 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
   }
 
-  private async reorderSubtasks(
-    taskId: string,
-    existingSubtasks: Subtask[],
-    updatedSubtasks: TaskUpdateInput['subtasks']
-  ) {
-    if (!updatedSubtasks) return
 
-    // Create a map of existing subtasks for easy lookup
-    const existingSubtasksMap = new Map(existingSubtasks.map((st) => [st.id, st]))
+  async rearrangeTasks(tasks: TaskReorderInput): Promise<{ data: Task[]; error: null } | { data: null; error: Error }> {
+    const { userId } = await auth()
 
-    // Create a map of updated subtasks for easy lookup
-    const updatedSubtasksMap = new Map(
-      updatedSubtasks.filter((st) => st.id).map((st) => [st.id!, st])
-    )
+    if(!userId){
+      throw new Error('User not found')
+    }
 
-    // Calculate the maximum order value
-    let maxOrder = Math.max(...existingSubtasks.map((st) => st.order), 0)
+    try {
+      const updatePromises = tasks.map(({id,order}) =>
+        this.supabase
+          .from('tasks')
+          .update({ order: order })
+          .eq('id', id)
+          .eq('user_id', userId)
+          .select()
+      )
 
-    // Process each subtask
-    for (const subtask of updatedSubtasks) {
-      if (subtask.id) {
-        // Delete the subtask
-        await this.supabase.from('sub-tasks').delete().eq('id', subtask.id)
-
-        existingSubtasksMap.delete(subtask.id)
-      } else if (subtask.id && existingSubtasksMap.has(subtask.id)) {
-        // Update existing subtask
-        const currentSubtask = existingSubtasksMap.get(subtask.id)!
-        const newOrder = subtask.order ?? currentSubtask.order
-
-        await this.supabase
-          .from('sub-tasks')
-          .update({
-            title: subtask.title ?? currentSubtask.title,
-            order: newOrder,
-            status: subtask.isCompleted ?? currentSubtask.isCompleted,
-          })
-          .eq('id', subtask.id)
-      } else if (!subtask.id) {
-        // Create new subtask with order at the end
-        maxOrder++
-        await this.supabase.from('sub-tasks').insert({
-          task_id: taskId,
-          title: subtask.title,
-          order: subtask.order ?? maxOrder,
-          status: subtask.isCompleted,
-        })
+  
+      // Execute all updates in a transaction
+      const results = await Promise.all(updatePromises)
+  
+      // Check for any errors in the results
+      const hasError = results.some(({ error }) => error)
+      if (hasError) {
+        return { data: null, error: new Error('Failed to update task orders') }
       }
+  
+      // Fetch the updated tasks to return
+      return { data: results.flatMap(({ data }) => data || []), error: null } 
+      
+    } catch (error) {
+      console.error('Error rearranging task:', error)
+          return { data: null, error: error as Error }
     }
-
-    // Reorder remaining subtasks that weren't in the update
-    const remainingSubtasks = Array.from(existingSubtasksMap.values())
-      .filter((st) => !updatedSubtasksMap.has(st.id))
-      .sort((a, b) => a.order - b.order)
-
-    for (const subtask of remainingSubtasks) {
-      maxOrder++
-      await this.supabase.from('sub-tasks').update({ order: maxOrder }).eq('id', subtask.id)
-    }
+        
   }
 
   async updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse> {
     try {
-      // First, fetch all existing subtasks to handle reordering properly
-      const { data: existingSubtasks, error: fetchExistingSubtaskError } = await this.supabase
-        .from('sub-tasks')
-        .select('*')
-        .eq('task_id', data.id)
-        .order('order', { ascending: true })
-
-      if (fetchExistingSubtaskError) {
-        return { data: null, error: fetchExistingSubtaskError }
-      }
 
       // Update task - creating update object from info provided
       const updateData: Partial<Task> = {}
-      if (data.title) updateData.task = data.title
-      if (data.tag) updateData.category = data.tag
+      if (data.title) updateData.title = data.title
+      if (data.tag) updateData.tag = data.tag
       if (data.type) updateData.type = data.type
       if (data.startUTCTimestamp) updateData.startUTCTimestamp = data.startUTCTimestamp
       if (data.isCompleted) updateData.isCompleted = data.isCompleted
@@ -245,10 +212,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
         }
       }
 
-      // Handle subtasks reordering and updates
-      if (data.subtasks) {
-        await this.reorderSubtasks(data.id, existingSubtasks || [], data.subtasks)
-      }
 
       return { data: updatedTask, error: null }
     } catch (error) {

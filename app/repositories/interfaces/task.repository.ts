@@ -1,6 +1,6 @@
 import { Task, Subtask } from '@/types/database.types'
 
-import { TaskInput, TaskUpdateInput } from '@/app/schemas/task.schema'
+import { TaskInput, TaskUpdateInput,TaskReorderInput } from '@/app/schemas/task.schema'
 import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types'
 
 export interface ITaskRepository {
@@ -10,4 +10,5 @@ export interface ITaskRepository {
   getSubtasksByTaskId(taskId: string): Promise<Subtask[]>
   deleteTask(id: string): Promise<boolean>
   updateTaskStatus(id: string, isCompleted: boolean): Promise<TaskUpdateResponse>
+  rearrangeTasks(tasks: TaskReorderInput): Promise<{ data: Task[]; error: null } | { data: null; error: Error }>
 }

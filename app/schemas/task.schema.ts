@@ -55,6 +55,13 @@ export const updateTaskSchema = taskBaseSchema.partial().extend({
     .optional(),
 })
 
+export const taskReorderSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    order: z.number(),
+  })
+)
+
 // Schema for deleting a task
 export const deleteTaskSchema = z.object({
   id: z.string().uuid(),
@@ -63,3 +70,4 @@ export const deleteTaskSchema = z.object({
 // Type exports
 export type TaskInput = z.infer<typeof createTaskSchema>
 export type TaskUpdateInput = z.infer<typeof updateTaskSchema>
+export type TaskReorderInput = z.infer<typeof taskReorderSchema>

@@ -1,6 +1,7 @@
 import { ITaskRepository } from '@/app/repositories/interfaces/task.repository'
-import { TaskInput, TaskUpdateInput } from '@/app/schemas/task.schema'
+import { TaskInput, TaskReorderInput, TaskUpdateInput } from '@/app/schemas/task.schema'
 import { TaskResponse, TaskUpdateResponse } from '@/app/types/api.types'
+import { Task } from '@/types/database.types'
 
 export class TaskService {
   constructor(private taskRepository: ITaskRepository) {}
@@ -28,5 +29,9 @@ export class TaskService {
 
   async updateTaskStatus(id: string, isCompleted: boolean): Promise<TaskUpdateResponse> {
     return this.taskRepository.updateTaskStatus(id, isCompleted)
+  }
+
+  async rearrangeTasks(tasks: TaskReorderInput): Promise< { data: Task[]; error: null } | { data: null; error: Error }> {
+    return this.taskRepository.rearrangeTasks(tasks)
   }
 }
