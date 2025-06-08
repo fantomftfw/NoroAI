@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { z } from 'zod'
-import { BRAIN_DUMP_SYSTEM_PROMPT_2 } from '@/app/api/prompts/agent-sys-prompt'
+import { BRAIN_DUMP_SYSTEM_PROMPT_3 } from '@/app/api/prompts/agent-sys-prompt'
 import { auth } from '@clerk/nextjs/server'
 
 const openai = new OpenAI({
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: 'input_text',
-              text: BRAIN_DUMP_SYSTEM_PROMPT_2,
+              text: BRAIN_DUMP_SYSTEM_PROMPT_3,
             },
           ],
         },
