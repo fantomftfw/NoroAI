@@ -29,6 +29,7 @@ export const createTaskSchema = taskBaseSchema.extend({
   subtasks: z
     .array(
       z.object({
+        id: z.string().uuid().optional(),
         title: z.string(),
         order: z.number(),
         isCompleted: z.boolean().optional().default(false),
@@ -39,20 +40,8 @@ export const createTaskSchema = taskBaseSchema.extend({
 })
 
 // Schema for updating an existing task
-export const updateTaskSchema = taskBaseSchema.partial().extend({
+export const updateTaskSchema = createTaskSchema.partial().extend({
   id: z.string().uuid(),
-  isCompleted: z.boolean().optional().default(false),
-  subtasks: z
-    .array(
-      z.object({
-        id: z.string().uuid().optional(),
-        title: z.string().optional(),
-        order: z.number().optional(),
-        isCompleted: z.boolean().optional(),
-        estimatedTime: z.number().optional().default(0),
-      })
-    )
-    .optional(),
 })
 
 export const taskReorderSchema = z.array(

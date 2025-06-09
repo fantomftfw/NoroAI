@@ -19,6 +19,7 @@ export interface Task {
 }
 
 export interface Subtask {
+  id?: string
   title: string
   order: number
   isCompleted?: boolean

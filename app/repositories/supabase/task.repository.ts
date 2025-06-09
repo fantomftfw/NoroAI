@@ -180,36 +180,40 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
   }
 
-  async updateTask(data: TaskUpdateInput): Promise<TaskUpdateResponse> {
+  async updateTask({ id,subtasks, ...data }: TaskUpdateInput): Promise<TaskUpdateResponse> {
     try {
-      // Update task - creating update object from info provided
-      const updateData: Partial<Task> = {}
-      if (data.title) updateData.title = data.title
-      if (data.tag) updateData.tag = data.tag
-      if (data.type) updateData.type = data.type
-      if (data.startUTCTimestamp) updateData.startUTCTimestamp = data.startUTCTimestamp
-      if (data.isCompleted) updateData.isCompleted = data.isCompleted
+      const { data: updatedTaskData, error: updateError } = await this.supabase
+        .from('tasks')
+        .update(data)
+        .eq('id', id)
+        .select() // to get the updated value
+     
 
-      // if (data.spiciness) updateData.spiciness = data.spiciness;
-      // if spiciness changes then sub task will be generated and sent  :: currently we are not dealing with it
+      //if subtask is present in data, update it
+      if (subtasks && subtasks.length > 0) {
+        const updatedSubtasksPromise = await Promise.all(
+        subtasks.map((update) =>
+            this.supabase.from('sub-tasks').update(update).eq('id', update.id).select().single()
+          )
+        )
 
-      let updatedTask = undefined
-      if (Object.keys(updateData).length > 0) {
-        const { data: updatedTaskData, error: updateError } = await this.supabase
-          .from('tasks')
-          .update(updateData)
-          .eq('id', data.id)
-          .select()
-          .single()
+        const errors = updatedSubtasksPromise.filter((r) => r.error)
+        if (errors.length) throw new Error('some updates failed')
 
-        updatedTask = updatedTaskData
+        const updatedSubtasks = updatedSubtasksPromise.map((r) => r.data)
 
-        if (updateError) {
-          return { data: null, error: updateError }
+        const updatedTaskDataWithSubtask = {
+          ...(updatedTaskData && updatedTaskData[0]),
+          subtasks: updatedSubtasks,
         }
+        return { data: updatedTaskDataWithSubtask, error: null }
       }
 
-      return { data: updatedTask, error: null }
+      if (updateError) {
+        return { data: null, error: updateError }
+      }
+
+      return { data: updatedTaskData[0], error: null }
     } catch (error) {
       return { data: null, error: error as Error }
     }
