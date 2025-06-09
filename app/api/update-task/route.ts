@@ -6,10 +6,9 @@ import { SupabaseTaskRepository } from '@/app/repositories/supabase/task.reposit
 
 export async function PATCH(request: Request) {
   try {
-    console.log('🚀 🚀 🚀 🚀 🚀 🚀 🚀')
+
     const body = await request.json()
     const result = updateTaskSchema.safeParse(body)
-    console.log('🚀 ~ PATCH ~ result:', result)
 
     if (!result.success) {
       return NextResponse.json({ errors: result.error.issues }, { status: 400 })
@@ -26,7 +25,6 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ message: 'Task not found' }, { status: 404 })
       }
 
-      console.debug('Error updating task:', error)
       return NextResponse.json({ message: 'Failed to update task' }, { status: 500 })
     }
 

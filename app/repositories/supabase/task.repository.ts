@@ -180,41 +180,50 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
   }
 
-  async updateTask({ id,subtasks, ...data }: TaskUpdateInput): Promise<TaskUpdateResponse> {
+  async updateTask({ id,subtasks, deleteSubtasksIds ,...data }: TaskUpdateInput): Promise<TaskUpdateResponse> {
     try {
       const { data: updatedTaskData, error: updateError } = await this.supabase
         .from('tasks')
         .update(data)
         .eq('id', id)
         .select() // to get the updated value
-     
+        .single()  // get the object
 
-      //if subtask is present in data, update it
-      if (subtasks && subtasks.length > 0) {
-        const updatedSubtasksPromise = await Promise.all(
-        subtasks.map((update) =>
-            this.supabase.from('sub-tasks').update(update).eq('id', update.id).select().single()
-          )
-        )
-
-        const errors = updatedSubtasksPromise.filter((r) => r.error)
-        if (errors.length) throw new Error('some updates failed')
-
-        const updatedSubtasks = updatedSubtasksPromise.map((r) => r.data)
-
-        const updatedTaskDataWithSubtask = {
-          ...(updatedTaskData && updatedTaskData[0]),
-          subtasks: updatedSubtasks,
+        if (updateError || !updatedTaskData) {
+          throw new Error(updateError?.message ?? 'Failed to update task');
         }
-        return { data: updatedTaskDataWithSubtask, error: null }
-      }
+  
+        // delete existing tasks
+         const deleteSubtaskOps = deleteSubtasksIds?.map((id:string) =>
+              this.supabase.from('sub-tasks').delete().eq('id', id).select()
+            ) ?? []
 
-      if (updateError) {
-        return { data: null, error: updateError }
-      }
+        // update the  subtasks
+        const updateSubtaskOps = subtasks?.map((update) =>
+              this.supabase.from('sub-tasks').upsert(update ,{onConflict:'id'}).select().single()
+            ) ?? []
 
-      return { data: updatedTaskData[0], error: null }
-    } catch (error) {
+
+        const results = await Promise.allSettled([...deleteSubtaskOps, ...updateSubtaskOps])
+        console.log("🚀 ~ SupabaseTaskRepository ~ updateTask ~ results:", JSON.stringify(results,null,2))
+        
+
+        const errors = results.filter((r) => r.status === 'rejected')
+        if (errors.length) throw new Error('updates failed')
+
+
+          const updatedSubtasks = results
+          .slice(deleteSubtaskOps.length) // only upserts have result data
+          .map(r =>  r.value.data)
+          
+          console.log("🚀 ~ updatedSubtasks:", JSON.stringify(updatedSubtasks,null,2))
+          return {
+            data: { ...updatedTaskData, subtasks: updatedSubtasks },
+            error: null,
+          };
+          
+        
+      } catch (error) {
       return { data: null, error: error as Error }
     }
   }
