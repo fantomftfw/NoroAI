@@ -205,18 +205,19 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
 
         const results = await Promise.allSettled([...deleteSubtaskOps, ...updateSubtaskOps])
-        console.log("🚀 ~ SupabaseTaskRepository ~ updateTask ~ results:", JSON.stringify(results,null,2))
-        
-
+  
         const errors = results.filter((r) => r.status === 'rejected')
         if (errors.length) throw new Error('updates failed')
 
 
           const updatedSubtasks = results
-          .slice(deleteSubtaskOps.length) // only upserts have result data
-          .map(r =>  r.value.data)
+          .slice(deleteSubtaskOps.length) // only upserts have result data so remove the delete ops
+          .map((r) => {
+            if (r.status === 'fulfilled') {
+             return r.value.data
+            } 
+          })
           
-          console.log("🚀 ~ updatedSubtasks:", JSON.stringify(updatedSubtasks,null,2))
           return {
             data: { ...updatedTaskData, subtasks: updatedSubtasks },
             error: null,
@@ -247,9 +248,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
   }
 
   async deleteTask(id: string): Promise<boolean> {
-    console.log({ id })
     const { error } = await this.supabase.from('tasks').delete().eq('id', id)
-
     return !error
   }
 
