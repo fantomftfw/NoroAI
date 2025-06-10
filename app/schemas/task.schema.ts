@@ -32,7 +32,7 @@ export const createTaskSchema = taskBaseSchema.extend({
         id: z.string().uuid().optional(),
         title: z.string(),
         order: z.number(),
-        task_id: z.string().uuid(),
+        task_id: z.string().uuid().optional(),
         isCompleted: z.boolean().optional().default(false),
         estimatedTime: z.number().default(0),
       })
