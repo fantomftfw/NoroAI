@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { auth } from '@clerk/nextjs/server'
 
-type MonthlyStats = {
-  date: string
-  created: number
-  completed: number
-}
 
 export const runtime = 'edge'
 
