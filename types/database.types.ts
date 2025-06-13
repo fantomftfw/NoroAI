@@ -22,6 +22,7 @@ export interface Subtask {
   id?: string
   title: string
   order: number
+  task_id?: string
   isCompleted?: boolean
   estimatedTime?: number
 }
