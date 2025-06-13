@@ -100,7 +100,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           {
             ...taskData,
             user_id: userId,
-            order: newOrder,
+            order: newOrder
           },
         ])
         .select()
@@ -256,7 +256,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
     try {
       const { data, error } = await this.supabase
         .from('tasks')
-        .update({ isCompleted: isCompleted })
+        .update({ isCompleted: isCompleted, completedAt: isCompleted ? new Date().toISOString() : '' })
         .eq('id', id)
         .select()
         .single()

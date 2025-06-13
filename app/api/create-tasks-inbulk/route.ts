@@ -27,7 +27,8 @@ export async function POST(request: Request) {
 
     // Process each task sequentially to maintain order
     for (const task of tasks) {
-      const { data, error } = await taskService.createTask(task)
+      console.log("task ", {...task, isVoiceDump: true})
+      const { data, error } = await taskService.createTask({...task, isVoiceDump: true})
       
       if (error) {
         console.error('Error creating task:', error)

@@ -22,6 +22,8 @@ export const taskBaseSchema = z.object({
     .default(TASK_DIFFICULTY.MEDIUM),
   reminderEnabled: z.boolean().default(false),
   reminderTime: z.string().optional().default(''),
+  completedAt: z.string().optional().default(''),
+  isVoiceDump: z.boolean().optional().default(false),
 })
 
 // Schema for creating a new task

@@ -15,6 +15,8 @@ export interface Task {
   goalDifficulty?: TaskDifficulty
   reminderEnabled: boolean
   reminderTime?: string
+  completedAt?: string
+  isVoiceDump?: boolean
   subtasks?: Subtask[]
 }
 

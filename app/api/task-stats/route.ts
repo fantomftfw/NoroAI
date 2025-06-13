@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('isCompleted', true)
-      .gte('completed_at', startISO)
-      .lte('completed_at', endISO);
+      .gte('completedAt', startISO)
+      .lte('completedAt', endISO);
 
     if (completedError) throw completedError;
 
