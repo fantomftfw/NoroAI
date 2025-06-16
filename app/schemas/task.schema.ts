@@ -8,7 +8,7 @@ export const taskBaseSchema = z.object({
   tag: z.string().optional(),
   startUTCTimestamp: z
     .string()
-    .datetime({ message: 'Invalid date format. Use ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+    .datetime({ offset: true, message: 'Invalid datetime format. Expected an ISO 8601 string with offset.' })
     .optional()
     .nullable(),
   spiciness: z.number().optional().default(3),
@@ -21,7 +21,11 @@ export const taskBaseSchema = z.object({
     .optional()
     .default(TASK_DIFFICULTY.MEDIUM),
   reminderEnabled: z.boolean().default(false),
-  reminderTime: z.string().optional().default(''),
+  reminderTime: z
+    .string()
+    .datetime({ offset: true, message: 'Invalid datetime format. Expected an ISO 8601 string with offset.' })
+    .optional()
+    .nullable(),
   completedAt: z.string().optional().default(''),
   isVoiceDump: z.boolean().optional().default(false),
 })

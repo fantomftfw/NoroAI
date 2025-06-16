@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id                 String    @id @default(uuid())
+  userId             String
+  title              String
+  type               String?
+  tag                String?
+  startUTCTimestamp  DateTime?
+  spiciness          Int?      @default(3)
+  isCompleted        Boolean?  @default(false)
+  order              Int?      @default(0)
+  totalEstimatedTime Int?      @default(0)
+  note               String?   @default("")
+  goalDifficulty     String?   @default("MEDIUM")
+  reminderEnabled    Boolean   @default(false)
+  reminderTime       DateTime?
+  reminderSent       Boolean   @default(false)
+  completedAt        String?   @default("")
+  isVoiceDump        Boolean?  @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model UserDevice {
+  id        String   @id @default(uuid())
+  userId    String
+  fcmToken  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, fcmToken])
+} 

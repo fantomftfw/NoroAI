@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
-import { BRAIN_DUMP_SYSTEM_PROMPT_4 } from '@/app/api/prompts/agent-sys-prompt'
+import { NEW_BRAIN_DUMP_PROMPT } from '@/app/api/prompts/new-brain-dump-prompt'
 import { auth } from '@clerk/nextjs/server'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '')
 
 const userInputSchema = z.object({
   userTasks: z.string(),
@@ -16,6 +14,7 @@ const userInputSchema = z.object({
     .optional() // IF NO TIME PROVIDED THEN IT IS SOMEDAY TASK
     .nullable(),
   tags: z.array(z.string()).optional(),
+  temperature: z.number().min(0).max(2).optional().default(1),
 })
 
 // async function transcribeAudio(audioFile: File): Promise<string> {
@@ -56,43 +55,31 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await openai.responses.create({
-      model: 'gpt-4.1-nano',
-      input: [
-        {
-          role: 'system',
-          content: [
-            {
-              type: 'input_text',
-              text: BRAIN_DUMP_SYSTEM_PROMPT_4,
-            },
-          ],
-        },
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash-preview-05-20',
+      systemInstruction: NEW_BRAIN_DUMP_PROMPT,
+    })
+
+    const result = await model.generateContent({
+      contents: [
         {
           role: 'user',
-          content: [
+          parts: [
             {
-              type: 'input_text',
               text: `Users task is ${body.userTasks} and current time  is ${body.currentDateTime} and tags are ${body.tags} `,
             },
           ],
         },
       ],
-      text: {
-        format: {
-          type: 'text',
-        },
+      generationConfig: {
+        temperature: userInputValidationResult.data.temperature,
+        responseMimeType: 'application/json',
       },
-      reasoning: {},
-      tools: [],
-      temperature: 1,
-      max_output_tokens: 2048,
-      top_p: 1,
-      store: true,
     })
 
-    const cleaned = response.output_text.replace(/^json\s*/i, '')
-    const parsedData = JSON.parse(cleaned)
+    const response = result.response
+    const text = response.text()
+    const parsedData = JSON.parse(text)
 
     console.log('parsedData = ', parsedData)
 
